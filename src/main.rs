@@ -1,4 +1,4 @@
-use std::fs;
+use std::{env, fs, process::exit};
 
 #[derive(Debug)]
 enum OpKind {
@@ -87,7 +87,14 @@ fn simulate_program(program: Vec<Op>) {
 fn compile_program(_program: Vec<Op>) {}
 
 fn main() {
-    let lines = parse_file("./examples/stack.rorth".to_string());
+    let args: Vec<String> = env::args().collect();
+    if args.len() < 2 {
+        eprintln!("ERROR: You have to pass in a file path.");
+        exit(1);
+    }
+
+    let filename = &args[1];
+    let lines = parse_file(filename.to_string());
     if let Ok(lines) = lines {
         let program = parse_word_as_op(lines);
         simulate_program(program);
