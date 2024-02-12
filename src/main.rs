@@ -3,7 +3,6 @@ use std::{env, fs, process::exit};
 #[derive(Debug)]
 enum OpKind {
     Push,
-    Pop,
     Plus,
     Dump,
 }
@@ -67,7 +66,6 @@ fn simulate_program(program: Vec<Op>) {
                     unreachable!();
                 }
             }
-            OpKind::Pop => todo!("Pop is not implemented yet"),
             OpKind::Plus => {
                 if let Some(a) = stack.pop() {
                     if let Some(b) = stack.pop() {
