@@ -96,5 +96,8 @@ fn main() {
     if let Ok(lines) = lines {
         let program = parse_word_as_op(lines);
         simulate_program(program);
+    } else {
+        eprintln!("ERROR: Cannot read file: {filename}");
+        exit(1);
     }
 }
