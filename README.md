@@ -6,7 +6,7 @@ Its like [Porth](https://gitlab.com/tsoding/porth), but in Rust.
 $ cargo run sim examples/stack.rorth
 ```
 
-## Usage compilation
+## Usage compilation (Right now only Apple Silicon is supported for compilation)
 ```bash
 $ cargo run com examples/stack.rorth
 $ make compile_run
