@@ -12,6 +12,16 @@ $ cargo run com examples/stack.rorth
 $ make compile_run
 ```
 
+## Development Milestones
+
+- [x] Compiled to a native instruction set (only Apple Silicon arm64 for now)
+- [ ] Turing-complete
+- [ ] Statically typed (the type checking is inspired by [WASM validation](https://binji.github.io/posts/webassembly-type-checking/))
+- [ ] [Self-hosted](https://en.wikipedia.org/wiki/Self-hosting_(compilers)) 
+- [ ] More or else close in convenience to C
+- [ ] Optimized
+- [ ] Crossplatform
+
 ## Language Reference
 
 ### Stack Operations
