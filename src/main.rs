@@ -5,7 +5,13 @@ use std::{
     process::exit,
 };
 
-#[derive(Debug)]
+use strum::EnumCount;
+use strum_macros::EnumCount;
+
+#[macro_use]
+extern crate static_assertions;
+
+#[derive(Debug, EnumCount)]
 enum OpKind {
     Push,
     Plus,
@@ -35,7 +41,10 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
     let mut result: Vec<Op> = vec![];
     for line in lines {
         let words: Vec<&str> = line.split_ascii_whitespace().collect();
+
         for word in words {
+            // Exhaustive handling of OpKinds in parse_word_as_op
+            const_assert!(OpKind::COUNT == 3);
             if let Ok(num) = word.parse::<u32>() {
                 result.push(Op {
                     kind: OpKind::Push,
