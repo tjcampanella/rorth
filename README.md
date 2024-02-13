@@ -1,5 +1,6 @@
 # rorth
 Its like [Porth](https://gitlab.com/tsoding/porth), but in Rust.
+Project inspired by [Tsoding's](https://github.com/rexim) Porth series on [Youtube](https://www.youtube.com/playlist?list=PLpM-Dvs8t0VbMZA7wW9aR3EtBqe2kinu4).
 
 ## Usage simulation
 ```bash
