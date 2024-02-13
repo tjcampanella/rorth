@@ -106,13 +106,33 @@ fn compile_program_darwin_arm64(program: Vec<Op>) {
         let _ = file.write(b"    adrp x0, num@PAGE\n");
         let _ = file.write(b"    add x0, x0, num@PAGEOFF\n");
         let _ = file.write(b"    ldr   x1, [sp], #16\n");
-        let _ = file.write(b"    str x1, [x0]\n");
-        let _ = file.write(b"    adrp x1, num@PAGE\n");
-        let _ = file.write(b"    add x1, x1, num@PAGEOFF\n");
-        let _ = file.write(b"    mov	X0, #1\n");
-        let _ = file.write(b"    mov	X2, #3\n");
-        let _ = file.write(b"    mov	X16, #4\n");
-        let _ = file.write(b"    svc	#0x80\n");
+        let _ = file.write(b"    mov x2, #10\n");
+        let _ = file.write(b"    mov x3, #7\n");
+        let _ = file.write(b"convert_loop:\n");
+        let _ = file.write(b"    sdiv x4, x1, x2\n");
+        let _ = file.write(b"    mul x5, x4, x2\n");
+        let _ = file.write(b"    sub x6, x1, x5 \n");
+        let _ = file.write(b"    and w6, w6, #0xFF\n");
+        let _ = file.write(b"    add x6, x6, #'0'\n");
+        let _ = file.write(b"    strb w6, [x0, x3]\n");
+        let _ = file.write(b"    sub x3, x3, #1\n");
+        let _ = file.write(b"    mov x1, x4\n");
+        let _ = file.write(b"    cmp x1, #0\n");
+        let _ = file.write(b"    bne convert_loop\n");
+        let _ = file.write(b"    adrp x0, num@PAGE\n");
+        let _ = file.write(b"    add x0, x0, num@PAGEOFF\n");
+        let _ = file.write(b"    mov x1, x0\n");
+        let _ = file.write(b"    mov x0, #1\n");
+        let _ = file.write(b"    mov x2, #8\n");
+        let _ = file.write(b"    mov x16, #4\n");
+        let _ = file.write(b"    svc #0x80\n");
+        let _ = file.write(b"    adrp x0, newline@PAGE\n");
+        let _ = file.write(b"    add x0, x0, newline@PAGEOFF\n");
+        let _ = file.write(b"    mov x1, x0\n");
+        let _ = file.write(b"    mov x0, #1\n");
+        let _ = file.write(b"    mov x2, #1\n");
+        let _ = file.write(b"    mov x16, #4 \n");
+        let _ = file.write(b"    svc #0x80\n");
         let _ = file.write(b"    ret\n\n");
         let _ = file.write(b"_start: \n");
         for op in program {
@@ -146,6 +166,7 @@ fn compile_program_darwin_arm64(program: Vec<Op>) {
 
         let _ = file.write(b".data\n");
         let _ = file.write(b"    num: .zero 8\n");
+        let _ = file.write(b"    newline: .asciz \"\\n\" \n");
     }
 }
 
