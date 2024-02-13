@@ -1,9 +1,14 @@
 # rorth
-Its like [Porth](https://gitlab.com/tsoding/porth), but in Rust
+Its like [Porth](https://gitlab.com/tsoding/porth), but in Rust.
 
-## Usage
+## Usage simulation
 ```bash
-$ cargo run examples/stack.rorth
+$ cargo run sim examples/stack.rorth
+```
+
+## Usage compilation
+```bash
+$ cargo run com examples/stack.rorth
 $ make compile_run
 ```
 

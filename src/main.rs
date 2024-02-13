@@ -143,17 +143,27 @@ fn compile_program_darwin_arm64(program: Vec<Op>) {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.len() < 2 {
-        eprintln!("ERROR: You have to pass in a file path.");
+    if args.len() < 3 {
+        eprintln!("ERROR: You have to pass in a mode and a file path.");
+        eprintln!("Usage: ./rorth <mode> <filepath> ");
+        eprintln!("    ./rorth sim <filepath> - Simulates the program.");
+        eprintln!("    ./rorth com <filepath> - Compiles the program.");
         exit(1);
     }
 
-    let filename = &args[1];
+    let mode = &args[1];
+    let filename = &args[2];
     let lines = parse_file(filename.to_string());
     if let Ok(lines) = lines {
         let program = parse_word_as_op(lines);
-        //simulate_program(program);
-        compile_program_darwin_arm64(program);
+        if mode == "sim" {
+            simulate_program(program);
+        } else if mode == "com" {
+            compile_program_darwin_arm64(program);
+        } else {
+            eprintln!("ERROR: Unknown mode '{mode}'");
+            exit(1);
+        }
     } else {
         eprintln!("ERROR: Cannot read file: {filename}");
         exit(1);
