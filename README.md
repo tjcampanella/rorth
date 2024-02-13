@@ -1,6 +1,12 @@
 # rorth
 Its like [Porth](https://gitlab.com/tsoding/porth), but in Rust
 
+## Usage
+```bash
+$ cargo run examples/stack.rorth
+$ make compile_run
+```
+
 ## Language Reference
 
 ### Stack Operations

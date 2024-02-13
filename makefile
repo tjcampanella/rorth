@@ -22,5 +22,13 @@ build: FORCE lint tests
 build_release: FORCE lint tests
 	cargo build --release
 
-build_release_linux: FORCE lint tests
-	RUSTFLAGS='-C target-feature=+crt-static' && cargo build --release --target x86_64-unknown-linux-gnu
+compile_asm:
+	as -arch arm64 -o out.o out.s
+	ld -o out  out.o -lSystem -syslibroot `xcrun -sdk macosx --show-sdk-path` -e _start -arch arm64
+
+compile_run: compile_asm
+	./out
+
+
+
+
