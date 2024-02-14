@@ -16,7 +16,7 @@ enum OpKind {
     Push,
     Plus,
     Minus,
-    Dump,
+    Print,
 }
 
 #[derive(Debug)]
@@ -60,9 +60,9 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
                     kind: OpKind::Minus,
                     value: None,
                 });
-            } else if word == "dump" {
+            } else if word == "print" {
                 result.push(Op {
-                    kind: OpKind::Dump,
+                    kind: OpKind::Print,
                     value: None,
                 });
             } else {
@@ -99,7 +99,7 @@ fn simulate_program(program: Vec<Op>) {
                     }
                 }
             }
-            OpKind::Dump => {
+            OpKind::Print => {
                 if let Some(a) = stack.pop() {
                     println!("{a}");
                 }
@@ -173,8 +173,8 @@ fn compile_program_darwin_arm64(program: Vec<Op>) {
                     let _ = file.write(b"    sub   x3, x1, x0\n");
                     let _ = file.write(b"    str x3, [sp, #-16]!\n");
                 }
-                OpKind::Dump => {
-                    let _ = file.write(b"    // dump \n");
+                OpKind::Print => {
+                    let _ = file.write(b"    // print \n");
                     let _ = file.write(b"    bl print\n");
                 }
             }
