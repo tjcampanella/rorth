@@ -31,25 +31,29 @@ Pushes the value 34 onto the stack.
 ```pascal
 34
 ```
-
-Pushes the value 34 onto the stack and then prints 34 to stdout.
+x1 -- x1 x1
 ```pascal
-34 print
+9 dup 
 ```
 
-Pushes the value 9 onto the stack and then duplicates it and prints 9 twice to stdout.
+x1 x2 -- x2 x1
 ```pascal
-9 dup print print
+9 10 swap 
 ```
 
+Prints the value on top of the stack and consumes it.
+x1 -- 
+```pascal
+print
+```
 ### Arithmetics
 
-Pushes the values 34 and 35 onto the stack and then adds them together and prints result 69 to stdout.
+x1 x2 -- x3
 ```pascal
-34 35 + print
+34 35 + 
 ```
 
-Pushes the values 34 and 35 onto the stack and then subtracts them and prints the result 420 to stdout.
+x1 x2 -- x3
 ```pascal
-440 20 - print
+440 20 - 
 ```

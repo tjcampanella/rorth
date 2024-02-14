@@ -5,3 +5,5 @@
 440 20 - print
 
 69 dup print print
+
+1 2 swap print print
