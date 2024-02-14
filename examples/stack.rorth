@@ -10,3 +10,5 @@
 
 1 2 3 rot print print print
 
+9 2 drop print
+

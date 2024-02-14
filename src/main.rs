@@ -21,6 +21,7 @@ enum OpKind {
     Dup,
     Swap,
     Rot,
+    Drop,
 }
 
 #[derive(Debug)]
@@ -48,7 +49,7 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
         let words: Vec<&str> = line.split_ascii_whitespace().collect();
         for word in words {
             // Exhaustive handling of OpKinds in parse_word_as_op
-            const_assert!(OpKind::COUNT == 8);
+            const_assert!(OpKind::COUNT == 9);
             if let Ok(num) = word.parse::<u32>() {
                 result.push(Op {
                     kind: OpKind::Push,
@@ -87,6 +88,11 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
             } else if word == "rot" {
                 result.push(Op {
                     kind: OpKind::Rot,
+                    value: None,
+                });
+            } else if word == "drop" {
+                result.push(Op {
+                    kind: OpKind::Drop,
                     value: None,
                 });
             } else {
@@ -160,6 +166,9 @@ fn simulate_program(program: Vec<Op>) {
                     }
                 }
             }
+            OpKind::Drop => {
+                stack.pop();
+            }
         }
     }
 }
@@ -217,47 +226,51 @@ fn compile_program_darwin_arm64(program: Vec<Op>) {
                 }
                 OpKind::Plus => {
                     let _ = file.write(b"    // plus \n");
-                    let _ = file.write(b"    ldr   x0, [sp], #16\n");
-                    let _ = file.write(b"    ldr   x1, [sp], #16\n");
-                    let _ = file.write(b"    add   x3, x0, x1\n");
+                    let _ = file.write(b"    ldr x0, [sp], #16\n");
+                    let _ = file.write(b"    ldr x1, [sp], #16\n");
+                    let _ = file.write(b"    add x3, x0, x1\n");
                     let _ = file.write(b"    str x3, [sp, #-16]!\n");
                 }
                 OpKind::Minus => {
                     let _ = file.write(b"    // minus \n");
-                    let _ = file.write(b"    ldr   x0, [sp], #16\n");
-                    let _ = file.write(b"    ldr   x1, [sp], #16\n");
-                    let _ = file.write(b"    sub   x3, x1, x0\n");
+                    let _ = file.write(b"    ldr x0, [sp], #16\n");
+                    let _ = file.write(b"    ldr x1, [sp], #16\n");
+                    let _ = file.write(b"    sub x3, x1, x0\n");
                     let _ = file.write(b"    str x3, [sp, #-16]!\n");
                 }
                 OpKind::Equals => {
                     let _ = file.write(b"    // equals \n");
-                    let _ = file.write(b"    ldr   x0, [sp], #16\n");
-                    let _ = file.write(b"    ldr   x1, [sp], #16\n");
-                    let _ = file.write(b"    cmp   x0, x1\n");
+                    let _ = file.write(b"    ldr x0, [sp], #16\n");
+                    let _ = file.write(b"    ldr x1, [sp], #16\n");
+                    let _ = file.write(b"    cmp x0, x1\n");
                     let _ = file.write(b"    cset w0, EQ\n");
                     let _ = file.write(b"    str w0, [sp, #-16]!\n");
                 }
                 OpKind::Dup => {
                     let _ = file.write(b"    // dup \n");
-                    let _ = file.write(b"    ldr   x0, [sp], #16\n");
+                    let _ = file.write(b"    ldr x0, [sp], #16\n");
                     let _ = file.write(b"    str x0, [sp, #-16]!\n");
                     let _ = file.write(b"    str x0, [sp, #-16]!\n");
                 }
                 OpKind::Swap => {
                     let _ = file.write(b"    // swap \n");
-                    let _ = file.write(b"    ldr   x0, [sp], #16\n");
-                    let _ = file.write(b"    ldr   x1, [sp], #16\n");
+                    let _ = file.write(b"    ldr x0, [sp], #16\n");
+                    let _ = file.write(b"    ldr x1, [sp], #16\n");
                     let _ = file.write(b"    str x0, [sp, #-16]!\n");
                     let _ = file.write(b"    str x1, [sp, #-16]!\n");
                 }
                 OpKind::Rot => {
                     let _ = file.write(b"    // rot \n");
-                    let _ = file.write(b"    ldr   x1, [sp], #16\n");
-                    let _ = file.write(b"    ldr   x2, [sp], #16\n");
-                    let _ = file.write(b"    ldr   x3, [sp], #16\n");
+                    let _ = file.write(b"    ldr x1, [sp], #16\n");
+                    let _ = file.write(b"    ldr x2, [sp], #16\n");
+                    let _ = file.write(b"    ldr x3, [sp], #16\n");
                     let _ = file.write(b"    str x2, [sp, #-16]!\n");
                     let _ = file.write(b"    str x1, [sp, #-16]!\n");
                     let _ = file.write(b"    str x3, [sp, #-16]!\n");
+                }
+                OpKind::Drop => {
+                    let _ = file.write(b"    // drop \n");
+                    let _ = file.write(b"    ldr x0, [sp], #16\n");
                 }
                 OpKind::Print => {
                     let _ = file.write(b"    // print \n");
