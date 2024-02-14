@@ -17,6 +17,7 @@ enum OpKind {
     Plus,
     Minus,
     Print,
+    Equals,
 }
 
 #[derive(Debug)]
@@ -44,7 +45,7 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
         let words: Vec<&str> = line.split_ascii_whitespace().collect();
         for word in words {
             // Exhaustive handling of OpKinds in parse_word_as_op
-            const_assert!(OpKind::COUNT == 4);
+            const_assert!(OpKind::COUNT == 5);
             if let Ok(num) = word.parse::<u32>() {
                 result.push(Op {
                     kind: OpKind::Push,
@@ -63,6 +64,11 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
             } else if word == "print" {
                 result.push(Op {
                     kind: OpKind::Print,
+                    value: None,
+                });
+            } else if word == "=" {
+                result.push(Op {
+                    kind: OpKind::Equals,
                     value: None,
                 });
             } else {
@@ -96,6 +102,13 @@ fn simulate_program(program: Vec<Op>) {
                 if let Some(a) = stack.pop() {
                     if let Some(b) = stack.pop() {
                         stack.push(b - a);
+                    }
+                }
+            }
+            OpKind::Equals => {
+                if let Some(a) = stack.pop() {
+                    if let Some(b) = stack.pop() {
+                        stack.push((b == a).into());
                     }
                 }
             }
@@ -172,6 +185,14 @@ fn compile_program_darwin_arm64(program: Vec<Op>) {
                     let _ = file.write(b"    ldr   x1, [sp], #16\n");
                     let _ = file.write(b"    sub   x3, x1, x0\n");
                     let _ = file.write(b"    str x3, [sp, #-16]!\n");
+                }
+                OpKind::Equals => {
+                    let _ = file.write(b"    // equals \n");
+                    let _ = file.write(b"    ldr   x0, [sp], #16\n");
+                    let _ = file.write(b"    ldr   x1, [sp], #16\n");
+                    let _ = file.write(b"    cmp   x0, x1\n");
+                    let _ = file.write(b"    cset w0, EQ\n");
+                    let _ = file.write(b"    str w0, [sp, #-16]!\n");
                 }
                 OpKind::Print => {
                     let _ = file.write(b"    // print \n");
