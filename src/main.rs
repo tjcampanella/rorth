@@ -15,6 +15,7 @@ extern crate static_assertions;
 enum OpKind {
     Push,
     Plus,
+    Minus,
     Dump,
 }
 
@@ -43,7 +44,7 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
         let words: Vec<&str> = line.split_ascii_whitespace().collect();
         for word in words {
             // Exhaustive handling of OpKinds in parse_word_as_op
-            const_assert!(OpKind::COUNT == 3);
+            const_assert!(OpKind::COUNT == 4);
             if let Ok(num) = word.parse::<u32>() {
                 result.push(Op {
                     kind: OpKind::Push,
@@ -52,6 +53,11 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
             } else if word == "+" {
                 result.push(Op {
                     kind: OpKind::Plus,
+                    value: None,
+                });
+            } else if word == "-" {
+                result.push(Op {
+                    kind: OpKind::Minus,
                     value: None,
                 });
             } else if word == "dump" {
@@ -83,6 +89,13 @@ fn simulate_program(program: Vec<Op>) {
                 if let Some(a) = stack.pop() {
                     if let Some(b) = stack.pop() {
                         stack.push(a + b);
+                    }
+                }
+            }
+            OpKind::Minus => {
+                if let Some(a) = stack.pop() {
+                    if let Some(b) = stack.pop() {
+                        stack.push(b - a);
                     }
                 }
             }
@@ -119,9 +132,9 @@ fn compile_program_darwin_arm64(program: Vec<Op>) {
         let _ = file.write(b"    mov x1, x4\n");
         let _ = file.write(b"    cmp x1, #0\n");
         let _ = file.write(b"    bne convert_loop\n");
-        let _ = file.write(b"    adrp x0, num@PAGE\n");
-        let _ = file.write(b"    add x0, x0, num@PAGEOFF\n");
-        let _ = file.write(b"    mov x1, x0\n");
+        let _ = file.write(b"    adrp x4, num@PAGE\n");
+        let _ = file.write(b"    add x4, x4, num@PAGEOFF\n");
+        let _ = file.write(b"    mov x1, x4\n");
         let _ = file.write(b"    mov x0, #1\n");
         let _ = file.write(b"    mov x2, #8\n");
         let _ = file.write(b"    mov x16, #4\n");
@@ -133,6 +146,8 @@ fn compile_program_darwin_arm64(program: Vec<Op>) {
         let _ = file.write(b"    mov x2, #1\n");
         let _ = file.write(b"    mov x16, #4 \n");
         let _ = file.write(b"    svc #0x80\n");
+        let _ = file.write(b"    mov x3, #0\n");
+        let _ = file.write(b"    str x3, [x4]\n");
         let _ = file.write(b"    ret\n\n");
         let _ = file.write(b"_start: \n");
         for op in program {
@@ -149,6 +164,13 @@ fn compile_program_darwin_arm64(program: Vec<Op>) {
                     let _ = file.write(b"    ldr   x0, [sp], #16\n");
                     let _ = file.write(b"    ldr   x1, [sp], #16\n");
                     let _ = file.write(b"    add   x3, x0, x1\n");
+                    let _ = file.write(b"    str x3, [sp, #-16]!\n");
+                }
+                OpKind::Minus => {
+                    let _ = file.write(b"    // minus \n");
+                    let _ = file.write(b"    ldr   x0, [sp], #16\n");
+                    let _ = file.write(b"    ldr   x1, [sp], #16\n");
+                    let _ = file.write(b"    sub   x3, x1, x0\n");
                     let _ = file.write(b"    str x3, [sp, #-16]!\n");
                 }
                 OpKind::Dump => {

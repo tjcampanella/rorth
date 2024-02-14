@@ -39,7 +39,12 @@ Pushes the value 34 onto the stack and then prints 34 to stdout.
 
 ### Arithmetics
 
-Pushes the values 34 and 35 onto the stack and then adds them together and prints 69 to stdout.
+Pushes the values 34 and 35 onto the stack and then adds them together and prints result 69 to stdout.
 ```pascal
 34 35 + dump
+```
+
+Pushes the values 34 and 35 onto the stack and then subtracts them and prints the result 420 to stdout.
+```pascal
+440 20 - dump
 ```
