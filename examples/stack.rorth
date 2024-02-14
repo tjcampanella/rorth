@@ -7,3 +7,6 @@
 69 dup print print
 
 1 2 swap print print
+
+1 2 3 rot print print print
+
