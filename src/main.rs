@@ -18,6 +18,7 @@ enum OpKind {
     Minus,
     Print,
     Equals,
+    Dup,
 }
 
 #[derive(Debug)]
@@ -45,7 +46,7 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
         let words: Vec<&str> = line.split_ascii_whitespace().collect();
         for word in words {
             // Exhaustive handling of OpKinds in parse_word_as_op
-            const_assert!(OpKind::COUNT == 5);
+            const_assert!(OpKind::COUNT == 6);
             if let Ok(num) = word.parse::<u32>() {
                 result.push(Op {
                     kind: OpKind::Push,
@@ -69,6 +70,11 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
             } else if word == "=" {
                 result.push(Op {
                     kind: OpKind::Equals,
+                    value: None,
+                });
+            } else if word == "dup" {
+                result.push(Op {
+                    kind: OpKind::Dup,
                     value: None,
                 });
             } else {
@@ -115,6 +121,12 @@ fn simulate_program(program: Vec<Op>) {
             OpKind::Print => {
                 if let Some(a) = stack.pop() {
                     println!("{a}");
+                }
+            }
+            OpKind::Dup => {
+                if let Some(a) = stack.pop() {
+                    stack.push(a);
+                    stack.push(a);
                 }
             }
         }
@@ -193,6 +205,12 @@ fn compile_program_darwin_arm64(program: Vec<Op>) {
                     let _ = file.write(b"    cmp   x0, x1\n");
                     let _ = file.write(b"    cset w0, EQ\n");
                     let _ = file.write(b"    str w0, [sp, #-16]!\n");
+                }
+                OpKind::Dup => {
+                    let _ = file.write(b"    // dup \n");
+                    let _ = file.write(b"    ldr   x0, [sp], #16\n");
+                    let _ = file.write(b"    str x0, [sp, #-16]!\n");
+                    let _ = file.write(b"    str x0, [sp, #-16]!\n");
                 }
                 OpKind::Print => {
                     let _ = file.write(b"    // print \n");

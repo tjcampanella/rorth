@@ -34,17 +34,22 @@ Pushes the value 34 onto the stack.
 
 Pushes the value 34 onto the stack and then prints 34 to stdout.
 ```pascal
-34 dump
+34 print
+```
+
+Pushes the value 9 onto the stack and then duplicates it and prints 9 twice to stdout.
+```pascal
+9 dup print print
 ```
 
 ### Arithmetics
 
 Pushes the values 34 and 35 onto the stack and then adds them together and prints result 69 to stdout.
 ```pascal
-34 35 + dump
+34 35 + print
 ```
 
 Pushes the values 34 and 35 onto the stack and then subtracts them and prints the result 420 to stdout.
 ```pascal
-440 20 - dump
+440 20 - print
 ```
