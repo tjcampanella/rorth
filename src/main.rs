@@ -22,6 +22,7 @@ enum OpKind {
     Swap,
     Rot,
     Drop,
+    Over,
 }
 
 #[derive(Debug)]
@@ -53,7 +54,7 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
         let words: Vec<&str> = line.split_ascii_whitespace().collect();
         for word in words {
             // Exhaustive handling of OpKinds in parse_word_as_op
-            const_assert!(OpKind::COUNT == 9);
+            const_assert!(OpKind::COUNT == 10);
             if let Ok(num) = word.parse::<u32>() {
                 result.push(Op {
                     kind: OpKind::Push,
@@ -97,6 +98,11 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
             } else if word == "drop" {
                 result.push(Op {
                     kind: OpKind::Drop,
+                    value: None,
+                });
+            } else if word == "over" {
+                result.push(Op {
+                    kind: OpKind::Over,
                     value: None,
                 });
             } else {
@@ -172,6 +178,15 @@ fn simulate_program(program: Vec<Op>) {
             }
             OpKind::Drop => {
                 stack.pop();
+            }
+            OpKind::Over => {
+                if let Some(a) = stack.pop() {
+                    if let Some(b) = stack.pop() {
+                        stack.push(b);
+                        stack.push(a);
+                        stack.push(b);
+                    }
+                }
             }
         }
     }
@@ -279,6 +294,14 @@ fn compile_program_darwin_arm64(program: Vec<Op>) {
                 OpKind::Print => {
                     let _ = file.write(b"    // print \n");
                     let _ = file.write(b"    bl print\n");
+                }
+                OpKind::Over => {
+                    let _ = file.write(b"    // over \n");
+                    let _ = file.write(b"    ldr x0, [sp], #16\n");
+                    let _ = file.write(b"    ldr x1, [sp], #16\n");
+                    let _ = file.write(b"    str x1, [sp, #-16]!\n");
+                    let _ = file.write(b"    str x0, [sp, #-16]!\n");
+                    let _ = file.write(b"    str x1, [sp, #-16]!\n");
                 }
             }
             let _ = file.write(b"\n");
