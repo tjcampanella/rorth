@@ -36,13 +36,13 @@ $ make compile_run
 | `over`  | `a b -- a b a`   | copy the element below the top of the stack                                                  |
 | `rot`   | `a b c -- b c a` | rotate the top three stack elements.                                                         |
 
-#### Comparison
+### Comparison
 
 | Name | Signature                              | Description                                                  |
 | ---  | ---                                    | ---                                                          |
-| `= ` | `[a: int] [b: int] -- [a == b : bool]` | checks if two elements on top of the stack are equal.        |
+| `=` | `[a: int] [b: int] -- [a == b : bool]` | checks if two elements on top of the stack are equal.        |
 
-#### Arithmetic
+### Arithmetic
 
 | Name     | Signature                                        | Description                                                                                                              |
 | ---      | ---                                              | ---                                                                                                                      |
