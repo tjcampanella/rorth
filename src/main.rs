@@ -45,7 +45,11 @@ fn parse_file(filename: String) -> Result<Vec<String>, ()> {
 
 fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
     let mut result: Vec<Op> = vec![];
-    for line in lines {
+    for mut line in lines {
+        let comment = line.find("//");
+        if let Some(comment_ind) = comment {
+            line = line.chars().take(comment_ind).collect();
+        }
         let words: Vec<&str> = line.split_ascii_whitespace().collect();
         for word in words {
             // Exhaustive handling of OpKinds in parse_word_as_op

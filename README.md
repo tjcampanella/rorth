@@ -27,44 +27,24 @@ $ make compile_run
 
 ### Stack Operations
 
-Pushes the value 34 onto the stack.
-```pascal
-34
-```
-x1 -- x1 x1
-```pascal
-9 dup 
-```
+| Name    | Signature        | Description                                                                                  |
+| ---     | ---              | ---                                                                                          |
+| `dup`   | `a -- a a`       | duplicate an element on top of the stack.                                                    |
+| `swap`  | `a b -- b a`     | swap 2 elements on the top of the stack.                                                     |
+| `drop`  | `a b -- a`       | drops the top element of the stack.                                                          |
+| `print` | `a b -- a`       | print the element on top of the stack in a free form to stdout and remove it from the stack. |
+| `over`  | `a b -- a b a`   | copy the element below the top of the stack                                                  |
+| `rot`   | `a b c -- b c a` | rotate the top three stack elements.                                                         |
 
-x1 x2 -- x2 x1
-```pascal
-9 10 swap 
-```
+#### Comparison
 
-x1 x2 x3 -- x2 x3 x1
-```pascal
-9 10 11 rot
-```
+| Name | Signature                              | Description                                                  |
+| ---  | ---                                    | ---                                                          |
+| `= ` | `[a: int] [b: int] -- [a == b : bool]` | checks if two elements on top of the stack are equal.        |
 
-x1 -- 
-```pascal
-9 drop 
-```
+#### Arithmetic
 
-
-Prints the value on top of the stack and consumes it.
-x1 -- 
-```pascal
-print
-```
-### Arithmetics
-
-x1 x2 -- x3
-```pascal
-34 35 + 
-```
-
-x1 x2 -- x3
-```pascal
-440 20 - 
-```
+| Name     | Signature                                        | Description                                                                                                              |
+| ---      | ---                                              | ---                                                                                                                      |
+| `+`      | `[a: int] [b: int] -- [a + b: int]`              | sums up two elements on the top of the stack.                                                                            |
+| `-`      | `[a: int] [b: int] -- [a - b: int]`              | subtracts two elements on the top of the stack                                                                           |
