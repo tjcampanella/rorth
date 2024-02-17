@@ -409,7 +409,7 @@ fn main() {
             compile_program_darwin_arm64(program, filename_pre);
             if run_flag {
                 if !silence_flag {
-                    println!("[INFO] as -arch arm64 -o {filename_pre}.o {filename_pre}.s");
+                    println!("[CMD] as -arch arm64 -o {filename_pre}.o {filename_pre}.s");
                 }
                 let res = std::process::Command::new("as")
                     .arg("-arch")
@@ -422,7 +422,7 @@ fn main() {
                 if let Ok(as_status) = res {
                     if as_status.success() {
                         if !silence_flag {
-                            println!("[INFO] ld -o {filename_pre} {filename_pre}.o -lSystem -syslibroot `xcrun -sdk macosx --show-sdk-path` -e _start -arch arm64");
+                            println!("[CMD] ld -o {filename_pre} {filename_pre}.o -lSystem -syslibroot `xcrun -sdk macosx --show-sdk-path` -e _start -arch arm64");
                         }
                         let res = std::process::Command::new("ld")
                             .arg("-o")
@@ -442,12 +442,12 @@ fn main() {
                         if let Ok(ld_status) = res {
                             if ld_status.success() {
                                 if !silence_flag {
-                                    println!("[INFO] ./{filename_pre}");
+                                    println!("[CMD] ./{filename_pre}");
                                 }
                                 let res =
                                     std::process::Command::new(format!("./{filename_pre}")).spawn();
                                 if let Some(err) = res.err() {
-                                    eprintln!("Failed to execute compiled program: {err}");
+                                    eprintln!("[ERROR] Failed to execute compiled program: {err}");
                                 }
                             }
                         }

@@ -12,13 +12,13 @@ fn main() {
                     if let Some(filename) = filename {
                         let filename = filename.to_str().unwrap_or("");
                         let filename = format!("./examples/{filename}");
-                        println!("Simulating: {filename}");
+                        println!("[INFO] Simulating: {filename}");
                         let sim_output = std::process::Command::new("target/release/rorth")
                             .arg("sim")
                             .arg(&filename)
                             .output();
 
-                        println!("Compiling: {filename}");
+                        println!("[INFO] Compiling & Running: {filename}");
                         let com_output = std::process::Command::new("target/release/rorth")
                             .arg("com")
                             .arg("-r")
@@ -36,16 +36,17 @@ fn main() {
                                     String::from_utf8_lossy(&sim_output.stderr).to_string();
                                 let com_stderr =
                                     String::from_utf8_lossy(&com_output.stderr).to_string();
-                                assert!(sim_stderr.is_empty(), "Simulation stderr: {sim_stderr}\n");
-                                assert!(com_stderr.is_empty(), "Compilation stderr: {com_stderr}\n");
+                                assert!(sim_stderr.is_empty(), "[ERROR] {filename} simulation failed ❌.\nstderr: {sim_stderr}\n");
+                                assert!(com_stderr.is_empty(), "[ERROR] {filename} compilation failed ❌.\nstderr: {com_stderr}\n");
                                 assert!(sim_stdout == com_stdout, 
-                                        "Simulation stdout bytes: {:?}\nSimulation stdout: \n{sim_stdout}\nCompilation stdout bytes: {:?}\nCompilation stdout: \n{com_stdout}\n", &sim_stdout, &com_stdout);
+                                        "[ERROR] {filename} failed ❌. Simulation stdout bytes: {:?}\nSimulation stdout: \n{sim_stdout}\nCompilation stdout bytes: {:?}\nCompilation stdout: \n{com_stdout}\n", &sim_stdout, &com_stdout);
+                                println!("    {filename} passed ✅.");
                             } else {
-                                eprintln!("Failed to compile program {filename}");
+                                eprintln!("[ERROR] Failed to compile program {filename}");
                                 exit(1);
                             }
                         } else {
-                            eprintln!("Failed to simulate program {filename}");
+                            eprintln!("[ERROR] Failed to simulate program {filename}");
                             exit(1);
                         }
                     }
