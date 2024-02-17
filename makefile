@@ -24,7 +24,7 @@ build_release: FORCE lint tests
 
 compile_asm:
 	as -arch arm64 -o out.o out.s
-	ld -o out  out.o -lSystem -syslibroot `xcrun -sdk macosx --show-sdk-path` -e _start -arch arm64
+	ld -o out out.o -lSystem -syslibroot `xcrun -sdk macosx --show-sdk-path` -e _start -arch arm64
 
 compile_run: compile_asm
 	./out

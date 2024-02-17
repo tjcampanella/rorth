@@ -192,8 +192,8 @@ fn simulate_program(program: Vec<Op>) {
     }
 }
 
-fn compile_program_darwin_arm64(program: Vec<Op>) {
-    let file = File::create("out.s");
+fn compile_program_darwin_arm64(program: Vec<Op>, filename: &str) {
+    let file = File::create(format!("{filename}.s"));
     if let Ok(file) = file {
         let mut file = LineWriter::new(file);
         let _ = file.write(b".global _start\n");
@@ -321,28 +321,81 @@ fn compile_program_darwin_arm64(program: Vec<Op>) {
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 {
-        eprintln!("ERROR: You have to pass in a mode and a file path.");
-        eprintln!("Usage: ./rorth <mode> <filepath> ");
-        eprintln!("    ./rorth sim <filepath> - Simulates the program.");
-        eprintln!("    ./rorth com <filepath> - Compiles the program.");
+        eprintln!("[ERROR] You have to pass in a mode and a file path.");
+        eprintln!("Usage: rorth [OPTIONS] <SUBCOMMAND> [ARGS]");
+        eprintln!("  SUBCOMMAND:");
+        eprintln!("    sim <file>            Simulate the program");
+        eprintln!("    com [OPTIONS] <file>  Compile the program");
+        eprintln!("      OPTIONS:");
+        eprintln!("        -r                  Run the program after successful compilation");
         exit(1);
     }
 
     let mode = &args[1];
-    let filename = &args[2];
+    let mut filename = &args[2];
+    let mut run_flag = None;
+    if args.len() > 3 {
+        run_flag = Some(&args[2]);
+        filename = &args[3];
+    }
     let lines = parse_file(filename.to_string());
     if let Ok(lines) = lines {
         let program = parse_word_as_op(lines);
         if mode == "sim" {
             simulate_program(program);
         } else if mode == "com" {
-            compile_program_darwin_arm64(program);
+            let filename_pre: Vec<&str> = filename.split(".rorth").collect();
+            let filename_pre = filename_pre[0];
+            compile_program_darwin_arm64(program, filename_pre);
+            if let Some(run_flag) = run_flag {
+                if run_flag == "-r" {
+                    println!("[INFO] as -arch arm64 -o {filename_pre}.o {filename_pre}.s");
+                    let _ = std::process::Command::new("as")
+                        .arg("-arch")
+                        .arg("arm64")
+                        .arg("-o")
+                        .arg(format!("{filename_pre}.o"))
+                        .arg(format!("{filename_pre}.s"))
+                        .spawn();
+
+                    let res = std::process::Command::new("xcrun")
+                        .arg("-sdk")
+                        .arg("macosx")
+                        .arg("--show-sdk-path")
+                        .output();
+
+                    if let Ok(sdk_path) = res {
+                        let sdk_path = String::from_utf8_lossy(&sdk_path.stdout).to_string();
+                        println!("[INFO] ld -o {filename_pre} {filename_pre}.o -lSystem -syslibroot {sdk_path} -e _start -arch arm64");
+                        let _ = std::process::Command::new("ld")
+                            .arg("-o")
+                            .arg(filename_pre)
+                            .arg(format!("{filename_pre}.o"))
+                            .arg("-L")
+                            .arg("/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib")
+                            .arg("-lSystem")
+                            .arg("-syslibroot")
+                            .arg(sdk_path)
+                            .arg("-e")
+                            .arg("_start")
+                            .arg("-arch")
+                            .arg("arm64")
+                            .spawn();
+
+                        println!("[INFO] ./{filename_pre}");
+                        let res = std::process::Command::new(format!("./{filename_pre}")).spawn();
+                        if let Some(err) = res.err() {
+                            eprintln!("Failed to execute compiled program: {err}");
+                        }
+                    }
+                }
+            }
         } else {
-            eprintln!("ERROR: Unknown mode '{mode}'");
+            eprintln!("[ERROR] Unknown mode '{mode}'");
             exit(1);
         }
     } else {
-        eprintln!("ERROR: Cannot read file: {filename}");
+        eprintln!("[ERROR] Cannot read file: {filename}");
         exit(1);
     }
 }
