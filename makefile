@@ -11,7 +11,7 @@ run: FORCE clean
 	cargo run
 
 tests: FORCE
-	cargo test
+	cargo run --release --bin test
 
 lint: FORCE
 	cargo clippy --all-targets --color always  --allow-dirty --allow-staged --fix -- -D warnings -D clippy::pedantic -D clippy::nursery -D clippy::unwrap_used -D clippy::expect_used

@@ -22,5 +22,7 @@ Cargo.lock
 out*
 stack.s
 stack
+control-flow.s
+control-flow
 
 

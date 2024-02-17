@@ -148,6 +148,11 @@ fn simulate_program(program: Vec<Op>) {
             }
             OpKind::Print => {
                 if let Some(a) = stack.pop() {
+                    let mut a = format!("{a}");
+                    let num_to_pad = 8 - a.len();
+                    for _ in 0..num_to_pad {
+                        a.insert(0, '\0');
+                    }
                     println!("{a}");
                 }
             }
@@ -306,12 +311,10 @@ fn compile_program_darwin_arm64(program: Vec<Op>, filename: &str) {
             }
             let _ = file.write(b"\n");
         }
-
         let _ = file.write(b"    // exit syscall\n");
         let _ = file.write(b"    mov x0, #0\n");
         let _ = file.write(b"    mov x16, #1\n");
-        let _ = file.write(b"    svc #0x80\n");
-
+        let _ = file.write(b"    svc #0x80\n\n");
         let _ = file.write(b".data\n");
         let _ = file.write(b"    num: .zero 8\n");
         let _ = file.write(b"    newline: .asciz \"\\n\" \n");
