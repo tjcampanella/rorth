@@ -350,42 +350,53 @@ fn main() {
             if let Some(run_flag) = run_flag {
                 if run_flag == "-r" {
                     println!("[INFO] as -arch arm64 -o {filename_pre}.o {filename_pre}.s");
-                    let _ = std::process::Command::new("as")
+                    let res = std::process::Command::new("as")
                         .arg("-arch")
                         .arg("arm64")
                         .arg("-o")
                         .arg(format!("{filename_pre}.o"))
                         .arg(format!("{filename_pre}.s"))
-                        .spawn();
+                        .status();
 
-                    let res = std::process::Command::new("xcrun")
-                        .arg("-sdk")
-                        .arg("macosx")
-                        .arg("--show-sdk-path")
-                        .output();
+                    if let Ok(as_status) = res {
+                        if as_status.success() {
+                            let res = std::process::Command::new("xcrun")
+                                .arg("-sdk")
+                                .arg("macosx")
+                                .arg("--show-sdk-path")
+                                .output();
 
-                    if let Ok(sdk_path) = res {
-                        let sdk_path = String::from_utf8_lossy(&sdk_path.stdout).to_string();
-                        println!("[INFO] ld -o {filename_pre} {filename_pre}.o -lSystem -syslibroot {sdk_path} -e _start -arch arm64");
-                        let _ = std::process::Command::new("ld")
-                            .arg("-o")
-                            .arg(filename_pre)
-                            .arg(format!("{filename_pre}.o"))
-                            .arg("-L")
-                            .arg("/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib")
-                            .arg("-lSystem")
-                            .arg("-syslibroot")
-                            .arg(sdk_path)
-                            .arg("-e")
-                            .arg("_start")
-                            .arg("-arch")
-                            .arg("arm64")
-                            .spawn();
+                            if let Ok(sdk_path) = res {
+                                let sdk_path =
+                                    String::from_utf8_lossy(&sdk_path.stdout).to_string();
+                                println!("[INFO] ld -o {filename_pre} {filename_pre}.o -lSystem -syslibroot {sdk_path} -e _start -arch arm64");
+                                let res = std::process::Command::new("ld")
+                                .arg("-o")
+                                .arg(filename_pre)
+                                .arg(format!("{filename_pre}.o"))
+                                .arg("-L")
+                                .arg("/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib")
+                                .arg("-lSystem")
+                                .arg("-syslibroot")
+                                .arg(sdk_path)
+                                .arg("-e")
+                                .arg("_start")
+                                .arg("-arch")
+                                .arg("arm64")
+                                .status();
 
-                        println!("[INFO] ./{filename_pre}");
-                        let res = std::process::Command::new(format!("./{filename_pre}")).spawn();
-                        if let Some(err) = res.err() {
-                            eprintln!("Failed to execute compiled program: {err}");
+                                if let Ok(ld_status) = res {
+                                    if ld_status.success() {
+                                        println!("[INFO] ./{filename_pre}");
+                                        let res =
+                                            std::process::Command::new(format!("./{filename_pre}"))
+                                                .spawn();
+                                        if let Some(err) = res.err() {
+                                            eprintln!("Failed to execute compiled program: {err}");
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
