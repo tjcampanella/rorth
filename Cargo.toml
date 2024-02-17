@@ -2,8 +2,15 @@
 name = "rorth"
 version = "0.1.0"
 edition = "2021"
+default-run = "rorth"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[[bin]]
+name = "rorth"
+path = "src/main.rs"
+
+[[bin]]
+name = "test"
+path = "src/test.rs"
 
 [dependencies]
 static_assertions = "1.1.0"

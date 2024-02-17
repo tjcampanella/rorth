@@ -328,16 +328,73 @@ fn main() {
         eprintln!("    com [OPTIONS] <file>  Compile the program");
         eprintln!("      OPTIONS:");
         eprintln!("        -r                  Run the program after successful compilation");
+        eprintln!("        -s                  Silence all logging statements.");
         exit(1);
     }
 
     let mode = &args[1];
     let mut filename = &args[2];
-    let mut run_flag = None;
+    let mut run_flag = false;
+    let mut silence_flag = false;
     if args.len() > 3 {
-        run_flag = Some(&args[2]);
+        if &args[2] == "-r" {
+            run_flag = true;
+        } else if &args[2] == "-s" {
+            silence_flag = true;
+        } else {
+            eprintln!("[ERROR] Unknown option: {}", &args[2]);
+            eprintln!("Usage: rorth [OPTIONS] <SUBCOMMAND> [ARGS]");
+            eprintln!("  SUBCOMMAND:");
+            eprintln!("    sim <file>            Simulate the program");
+            eprintln!("    com [OPTIONS] <file>  Compile the program");
+            eprintln!("      OPTIONS:");
+            eprintln!("        -r                  Run the program after successful compilation");
+            eprintln!("        -s                  Silence all logging statements.");
+            exit(1);
+        }
         filename = &args[3];
     }
+
+    if args.len() > 4 {
+        if &args[2] != "-r" && &args[2] != "-s" {
+            eprintln!("[ERROR] Unknown option: {}", &args[2]);
+            eprintln!("Usage: rorth [OPTIONS] <SUBCOMMAND> [ARGS]");
+            eprintln!("  SUBCOMMAND:");
+            eprintln!("    sim <file>            Simulate the program");
+            eprintln!("    com [OPTIONS] <file>  Compile the program");
+            eprintln!("      OPTIONS:");
+            eprintln!("        -r                  Run the program after successful compilation");
+            eprintln!("        -s                  Silence all logging statements.");
+            exit(1);
+        }
+
+        if &args[3] != "-r" && &args[3] != "-s" {
+            eprintln!("[ERROR] Unknown option: {}", &args[3]);
+            eprintln!("Usage: rorth [OPTIONS] <SUBCOMMAND> [ARGS]");
+            eprintln!("  SUBCOMMAND:");
+            eprintln!("    sim <file>            Simulate the program");
+            eprintln!("    com [OPTIONS] <file>  Compile the program");
+            eprintln!("      OPTIONS:");
+            eprintln!("        -r                  Run the program after successful compilation");
+            eprintln!("        -s                  Silence all logging statements.");
+            exit(1);
+        }
+
+        if &args[2] == "-r" {
+            run_flag = true;
+        } else if &args[2] == "-s" {
+            silence_flag = true;
+        }
+
+        if &args[3] == "-r" {
+            run_flag = true;
+        } else if &args[3] == "-s" {
+            silence_flag = true;
+        }
+
+        filename = &args[4];
+    }
+
     let lines = parse_file(filename.to_string());
     if let Ok(lines) = lines {
         let program = parse_word_as_op(lines);
@@ -347,44 +404,47 @@ fn main() {
             let filename_pre: Vec<&str> = filename.split(".rorth").collect();
             let filename_pre = filename_pre[0];
             compile_program_darwin_arm64(program, filename_pre);
-            if let Some(run_flag) = run_flag {
-                if run_flag == "-r" {
+            if run_flag {
+                if !silence_flag {
                     println!("[INFO] as -arch arm64 -o {filename_pre}.o {filename_pre}.s");
-                    let res = std::process::Command::new("as")
-                        .arg("-arch")
-                        .arg("arm64")
-                        .arg("-o")
-                        .arg(format!("{filename_pre}.o"))
-                        .arg(format!("{filename_pre}.s"))
-                        .status();
+                }
+                let res = std::process::Command::new("as")
+                    .arg("-arch")
+                    .arg("arm64")
+                    .arg("-o")
+                    .arg(format!("{filename_pre}.o"))
+                    .arg(format!("{filename_pre}.s"))
+                    .status();
 
-                    if let Ok(as_status) = res {
-                        if as_status.success() {
+                if let Ok(as_status) = res {
+                    if as_status.success() {
+                        if !silence_flag {
                             println!("[INFO] ld -o {filename_pre} {filename_pre}.o -lSystem -syslibroot `xcrun -sdk macosx --show-sdk-path` -e _start -arch arm64");
-                            let res = std::process::Command::new("ld")
-                                .arg("-o")
-                                .arg(filename_pre)
-                                .arg(format!("{filename_pre}.o"))
-                                .arg("-L")
-                                .arg("/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib")
-                                .arg("-lSystem")
-                                .arg("-syslibroot")
-                                .arg("`xcrun -sdk macosx --show-sdk-path`")
-                                .arg("-e")
-                                .arg("_start")
-                                .arg("-arch")
-                                .arg("arm64")
-                                .status();
+                        }
+                        let res = std::process::Command::new("ld")
+                            .arg("-o")
+                            .arg(filename_pre)
+                            .arg(format!("{filename_pre}.o"))
+                            .arg("-L")
+                            .arg("/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib")
+                            .arg("-lSystem")
+                            .arg("-syslibroot")
+                            .arg("`xcrun -sdk macosx --show-sdk-path`")
+                            .arg("-e")
+                            .arg("_start")
+                            .arg("-arch")
+                            .arg("arm64")
+                            .status();
 
-                            if let Ok(ld_status) = res {
-                                if ld_status.success() {
+                        if let Ok(ld_status) = res {
+                            if ld_status.success() {
+                                if !silence_flag {
                                     println!("[INFO] ./{filename_pre}");
-                                    let res =
-                                        std::process::Command::new(format!("./{filename_pre}"))
-                                            .spawn();
-                                    if let Some(err) = res.err() {
-                                        eprintln!("Failed to execute compiled program: {err}");
-                                    }
+                                }
+                                let res =
+                                    std::process::Command::new(format!("./{filename_pre}")).spawn();
+                                if let Some(err) = res.err() {
+                                    eprintln!("Failed to execute compiled program: {err}");
                                 }
                             }
                         }
