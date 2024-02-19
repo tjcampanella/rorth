@@ -139,7 +139,6 @@ fn cross_reference_blocks(program: &mut Vec<Op>, ip_start: usize) {
             } else if curr_if.is_some() {
                 cross_reference_blocks(program, ip);
             }
-            ip += 1;
         } else if op.kind == OpKind::End {
             if let Some(mut if_op) = curr_if {
                 if if_op.value.is_none() && op.value.is_none() {
@@ -151,10 +150,8 @@ fn cross_reference_blocks(program: &mut Vec<Op>, ip_start: usize) {
                     curr_if_ip = 0;
                 }
             }
-            ip += 1;
-        } else {
-            ip += 1;
         }
+        ip += 1;
     }
 }
 
