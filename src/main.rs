@@ -11,7 +11,7 @@ use strum_macros::EnumCount;
 #[macro_use]
 extern crate static_assertions;
 
-#[derive(Debug, EnumCount, PartialEq)]
+#[derive(Debug, EnumCount, PartialEq, Clone, Copy)]
 enum OpKind {
     Push,
     If,
@@ -27,7 +27,7 @@ enum OpKind {
     Over,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 struct Op {
     kind: OpKind,
     value: Option<u32>,
@@ -126,6 +126,38 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
     result
 }
 
+fn cross_reference_blocks(program: &mut Vec<Op>, ip_start: usize) {
+    let mut ip = ip_start;
+    let mut curr_if = None;
+    let mut curr_if_ip = 0;
+    while ip < program.len() {
+        let mut op = program[ip];
+        if op.kind == OpKind::If {
+            if curr_if.is_none() && op.value.is_none() {
+                curr_if = Some(op);
+                curr_if_ip = ip;
+            } else if curr_if.is_some() {
+                cross_reference_blocks(program, ip);
+            }
+            ip += 1;
+        } else if op.kind == OpKind::End {
+            if let Some(mut if_op) = curr_if {
+                if if_op.value.is_none() && op.value.is_none() {
+                    if_op.value = ip.try_into().ok();
+                    op.value = ip.try_into().ok();
+                    program[curr_if_ip] = if_op;
+                    program[ip] = op;
+                    curr_if = None;
+                    curr_if_ip = 0;
+                }
+            }
+            ip += 1;
+        } else {
+            ip += 1;
+        }
+    }
+}
+
 fn simulate_program(program: &[Op]) {
     let mut stack = vec![];
     let mut ip = 0;
@@ -219,13 +251,9 @@ fn simulate_program(program: &[Op]) {
                 if let Some(a) = stack.pop() {
                     if a == 1 {
                         ip += 1;
-                    } else {
-                        let end = program
-                            .iter()
-                            .skip(ip + 1)
-                            .position(|x| x.kind == OpKind::End);
-                        if let Some(ind) = end {
-                            ip = ind + ip + 1;
+                    } else if let Some(ind) = op.value {
+                        if let Ok(ind) = ind.try_into() {
+                            ip = ind;
                         }
                     }
                 }
@@ -365,13 +393,8 @@ fn compile_program_darwin_arm64(program: &[Op], filename: &str) {
                     let _ = file.write(b"    // if \n");
                     let _ = file.write(b"    ldr x0, [sp], #16\n");
                     let _ = file.write(b"    cmp x0, #0\n");
-                    let end = program
-                        .iter()
-                        .skip(ip + 1)
-                        .position(|x| x.kind == OpKind::End);
-                    if let Some(end) = end {
-                        let end = end + ip + 1;
-                        let _ = file.write(format!("    beq addr_{end}\n").as_bytes());
+                    if let Some(ind) = op.value {
+                        let _ = file.write(format!("    beq addr_{ind}\n").as_bytes());
                     }
                     ip += 1;
                 }
@@ -471,7 +494,8 @@ fn main() {
 
     let lines = parse_file(filename.to_string());
     if let Ok(lines) = lines {
-        let program = parse_word_as_op(lines);
+        let mut program = parse_word_as_op(lines);
+        cross_reference_blocks(&mut program, 0);
         if mode == "sim" {
             simulate_program(&program);
         } else if mode == "com" {

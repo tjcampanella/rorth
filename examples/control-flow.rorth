@@ -1,17 +1,44 @@
-10 20 = print
-20 20 = print
+10 20 = print       // Prints 0
+20 20 = print       // Prints 1
 
-100 200 = print
-200 200 = print
+100 200 = print     // Prints 0
+200 200 = print     // Prints 1
 
+// Should print 69
 0 0 = if
     69 print
 end
 
+// Should print 420
 59 59 = if
     420 print
 end
 
+// Should do nothing
 9 5 = if
     99 print
+end
+
+// Should do nothing
+9 5 = if
+    9 0 = if
+        22 print
+    end
+    400 print
+end
+
+// Should print 400
+9 9 = if
+    9 0 = if
+        22 print
+    end
+    400 print
+end
+
+// Should print 22 and 400
+9 9 = if
+    13 13 = if
+        22 print
+    end
+    400 print
 end
