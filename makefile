@@ -11,9 +11,11 @@ run: FORCE clean
 	cargo run
 
 tests: FORCE
+	cargo build --release
 	cargo run --release --bin test examples
 
 test_record: FORCE
+	cargo build --release
 	cargo run --release --bin test record examples
 
 lint: FORCE

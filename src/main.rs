@@ -11,9 +11,11 @@ use strum_macros::EnumCount;
 #[macro_use]
 extern crate static_assertions;
 
-#[derive(Debug, EnumCount)]
+#[derive(Debug, EnumCount, PartialEq)]
 enum OpKind {
     Push,
+    If,
+    End,
     Plus,
     Minus,
     Print,
@@ -54,7 +56,7 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
         let words: Vec<&str> = line.split_ascii_whitespace().collect();
         for word in words {
             // Exhaustive handling of OpKinds in parse_word_as_op
-            const_assert!(OpKind::COUNT == 10);
+            const_assert!(OpKind::COUNT == 12);
             if let Ok(num) = word.parse::<u32>() {
                 result.push(Op {
                     kind: OpKind::Push,
@@ -105,6 +107,16 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
                     kind: OpKind::Over,
                     value: None,
                 });
+            } else if word == "if" {
+                result.push(Op {
+                    kind: OpKind::If,
+                    value: None,
+                });
+            } else if word == "end" {
+                result.push(Op {
+                    kind: OpKind::End,
+                    value: None,
+                });
             } else {
                 panic!("Unimplemented word: {word}")
             }
@@ -114,16 +126,17 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
     result
 }
 
-fn simulate_program(program: Vec<Op>) {
+fn simulate_program(program: &[Op]) {
     let mut stack = vec![];
-    for op in program {
+    let mut ip = 0;
+    while ip < program.len() {
+        let op = &program[ip];
         match op.kind {
             OpKind::Push => {
                 if let Some(val) = op.value {
                     stack.push(val);
-                } else {
-                    unreachable!();
                 }
+                ip += 1;
             }
             OpKind::Plus => {
                 if let Some(a) = stack.pop() {
@@ -131,6 +144,7 @@ fn simulate_program(program: Vec<Op>) {
                         stack.push(a + b);
                     }
                 }
+                ip += 1;
             }
             OpKind::Minus => {
                 if let Some(a) = stack.pop() {
@@ -138,6 +152,7 @@ fn simulate_program(program: Vec<Op>) {
                         stack.push(b - a);
                     }
                 }
+                ip += 1;
             }
             OpKind::Equals => {
                 if let Some(a) = stack.pop() {
@@ -145,6 +160,7 @@ fn simulate_program(program: Vec<Op>) {
                         stack.push((b == a).into());
                     }
                 }
+                ip += 1;
             }
             OpKind::Print => {
                 if let Some(a) = stack.pop() {
@@ -155,12 +171,14 @@ fn simulate_program(program: Vec<Op>) {
                     }
                     println!("{a}");
                 }
+                ip += 1;
             }
             OpKind::Dup => {
                 if let Some(a) = stack.pop() {
                     stack.push(a);
                     stack.push(a);
                 }
+                ip += 1;
             }
             OpKind::Swap => {
                 if let Some(a) = stack.pop() {
@@ -169,6 +187,7 @@ fn simulate_program(program: Vec<Op>) {
                         stack.push(b);
                     }
                 }
+                ip += 1;
             }
             OpKind::Rot => {
                 if let Some(a) = stack.pop() {
@@ -180,9 +199,11 @@ fn simulate_program(program: Vec<Op>) {
                         }
                     }
                 }
+                ip += 1;
             }
             OpKind::Drop => {
                 stack.pop();
+                ip += 1;
             }
             OpKind::Over => {
                 if let Some(a) = stack.pop() {
@@ -192,12 +213,31 @@ fn simulate_program(program: Vec<Op>) {
                         stack.push(b);
                     }
                 }
+                ip += 1;
+            }
+            OpKind::If => {
+                if let Some(a) = stack.pop() {
+                    if a == 1 {
+                        ip += 1;
+                    } else {
+                        let end = program
+                            .iter()
+                            .skip(ip + 1)
+                            .position(|x| x.kind == OpKind::End);
+                        if let Some(ind) = end {
+                            ip = ind + ip + 1;
+                        }
+                    }
+                }
+            }
+            OpKind::End => {
+                ip += 1;
             }
         }
     }
 }
 
-fn compile_program_darwin_arm64(program: Vec<Op>, filename: &str) {
+fn compile_program_darwin_arm64(program: &[Op], filename: &str) {
     let file = File::create(format!("{filename}.s"));
     if let Ok(file) = file {
         let mut file = LineWriter::new(file);
@@ -239,7 +279,10 @@ fn compile_program_darwin_arm64(program: Vec<Op>, filename: &str) {
         let _ = file.write(b"    str x3, [x4]\n");
         let _ = file.write(b"    ret\n\n");
         let _ = file.write(b"_start: \n");
-        for op in program {
+
+        let mut ip = 0;
+        while ip < program.len() {
+            let op = &program[ip];
             match op.kind {
                 OpKind::Push => {
                     if let Some(val) = op.value {
@@ -247,6 +290,7 @@ fn compile_program_darwin_arm64(program: Vec<Op>, filename: &str) {
                         let _ = file.write(format!("    mov x0, #{val}\n").as_bytes());
                         let _ = file.write("    str x0, [sp, #-16]!\n".to_string().as_bytes());
                     }
+                    ip += 1;
                 }
                 OpKind::Plus => {
                     let _ = file.write(b"    // plus \n");
@@ -254,6 +298,7 @@ fn compile_program_darwin_arm64(program: Vec<Op>, filename: &str) {
                     let _ = file.write(b"    ldr x1, [sp], #16\n");
                     let _ = file.write(b"    add x3, x0, x1\n");
                     let _ = file.write(b"    str x3, [sp, #-16]!\n");
+                    ip += 1;
                 }
                 OpKind::Minus => {
                     let _ = file.write(b"    // minus \n");
@@ -261,6 +306,7 @@ fn compile_program_darwin_arm64(program: Vec<Op>, filename: &str) {
                     let _ = file.write(b"    ldr x1, [sp], #16\n");
                     let _ = file.write(b"    sub x3, x1, x0\n");
                     let _ = file.write(b"    str x3, [sp, #-16]!\n");
+                    ip += 1;
                 }
                 OpKind::Equals => {
                     let _ = file.write(b"    // equals \n");
@@ -269,12 +315,14 @@ fn compile_program_darwin_arm64(program: Vec<Op>, filename: &str) {
                     let _ = file.write(b"    cmp x0, x1\n");
                     let _ = file.write(b"    cset w0, EQ\n");
                     let _ = file.write(b"    str w0, [sp, #-16]!\n");
+                    ip += 1;
                 }
                 OpKind::Dup => {
                     let _ = file.write(b"    // dup \n");
                     let _ = file.write(b"    ldr x0, [sp], #16\n");
                     let _ = file.write(b"    str x0, [sp, #-16]!\n");
                     let _ = file.write(b"    str x0, [sp, #-16]!\n");
+                    ip += 1;
                 }
                 OpKind::Swap => {
                     let _ = file.write(b"    // swap \n");
@@ -282,6 +330,7 @@ fn compile_program_darwin_arm64(program: Vec<Op>, filename: &str) {
                     let _ = file.write(b"    ldr x1, [sp], #16\n");
                     let _ = file.write(b"    str x0, [sp, #-16]!\n");
                     let _ = file.write(b"    str x1, [sp, #-16]!\n");
+                    ip += 1;
                 }
                 OpKind::Rot => {
                     let _ = file.write(b"    // rot \n");
@@ -291,14 +340,17 @@ fn compile_program_darwin_arm64(program: Vec<Op>, filename: &str) {
                     let _ = file.write(b"    str x2, [sp, #-16]!\n");
                     let _ = file.write(b"    str x1, [sp, #-16]!\n");
                     let _ = file.write(b"    str x3, [sp, #-16]!\n");
+                    ip += 1;
                 }
                 OpKind::Drop => {
                     let _ = file.write(b"    // drop \n");
                     let _ = file.write(b"    ldr x0, [sp], #16\n");
+                    ip += 1;
                 }
                 OpKind::Print => {
                     let _ = file.write(b"    // print \n");
                     let _ = file.write(b"    bl print\n");
+                    ip += 1;
                 }
                 OpKind::Over => {
                     let _ = file.write(b"    // over \n");
@@ -307,6 +359,25 @@ fn compile_program_darwin_arm64(program: Vec<Op>, filename: &str) {
                     let _ = file.write(b"    str x1, [sp, #-16]!\n");
                     let _ = file.write(b"    str x0, [sp, #-16]!\n");
                     let _ = file.write(b"    str x1, [sp, #-16]!\n");
+                    ip += 1;
+                }
+                OpKind::If => {
+                    let _ = file.write(b"    // if \n");
+                    let _ = file.write(b"    ldr x0, [sp], #16\n");
+                    let _ = file.write(b"    cmp x0, #0\n");
+                    let end = program
+                        .iter()
+                        .skip(ip + 1)
+                        .position(|x| x.kind == OpKind::End);
+                    if let Some(end) = end {
+                        let end = end + ip + 1;
+                        let _ = file.write(format!("    beq addr_{end}\n").as_bytes());
+                    }
+                    ip += 1;
+                }
+                OpKind::End => {
+                    let _ = file.write(format!("addr_{ip}:\n").as_bytes());
+                    ip += 1;
                 }
             }
             let _ = file.write(b"\n");
@@ -402,11 +473,11 @@ fn main() {
     if let Ok(lines) = lines {
         let program = parse_word_as_op(lines);
         if mode == "sim" {
-            simulate_program(program);
+            simulate_program(&program);
         } else if mode == "com" {
             let filename_pre: Vec<&str> = filename.split(".rorth").collect();
             let filename_pre = filename_pre[0];
-            compile_program_darwin_arm64(program, filename_pre);
+            compile_program_darwin_arm64(&program, filename_pre);
             if run_flag {
                 if !silence_flag {
                     println!("[CMD] as -arch arm64 -o {filename_pre}.o {filename_pre}.s");

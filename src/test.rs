@@ -16,10 +16,10 @@ fn main() {
     }
 
     let mut folder = &args[1];
-    let mut record_flag = false;
+    let mut record_flag = true;
     if args.len() > 2 {
         if &args[1] == "record" {
-            record_flag = true;
+            record_flag = false;
             folder = &args[2];
         } else {
             eprintln!("Unknown subcommand: {}", &args[1]);
@@ -27,8 +27,9 @@ fn main() {
         }
     }
 
-    for entry in fs::read_dir(folder).unwrap() {
-        if let Ok(entry) = entry {
+    let folder = fs::read_dir(folder);
+    if let Ok(folder) = folder {
+    for entry in folder.flatten() {
             let path = entry.path();
 
             if let Some(extension) = path.extension() {
@@ -63,7 +64,7 @@ fn main() {
                                     String::from_utf8_lossy(&sim_output.stderr).to_string();
                                 let com_stderr =
                                     String::from_utf8_lossy(&com_output.stderr).to_string();
-                                if !record_flag {
+                                if record_flag {
                                     assert!(sim_stderr.is_empty(), "[ERROR] {filename} simulation failed ❌.\nstderr: {sim_stderr}\n");
                                     assert!(com_stderr.is_empty(), "[ERROR] {filename} compilation failed ❌.\nstderr: {com_stderr}\n");
                                     assert!(sim_stdout == com_stdout, 
@@ -94,7 +95,7 @@ fn main() {
                         }
                     }
                 }
-            }
         }
+    }
     }
 }
