@@ -6,7 +6,7 @@ on:
 jobs:
   ci:
     name: Lint & Test
-    runs-on: ubuntu-latest
+    runs-on: [macos, arm64]
     steps:
       - uses: actions/checkout@v4
       - uses: actions-rust-lang/setup-rust-toolchain@v1
