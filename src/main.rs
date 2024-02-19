@@ -539,8 +539,13 @@ fn main() {
                                 if !silence_flag {
                                     println!("[CMD] ./{filename_pre}");
                                 }
-                                let res =
+                                let mut res =
                                     std::process::Command::new(format!("./{filename_pre}")).spawn();
+
+                                if let Ok(ref mut res) = res {
+                                    let _ = res.wait();
+                                }
+
                                 if let Some(err) = res.err() {
                                     eprintln!("[ERROR] Failed to execute compiled program: {err}");
                                 }

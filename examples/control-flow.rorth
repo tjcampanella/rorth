@@ -42,3 +42,14 @@ end
     end
     400 print
 end
+
+// Should print 23 24 25
+9 9 = if
+    13 13 = if
+        14 14 = if
+            23 print
+        end
+        24 print
+    end
+    25 print
+end
