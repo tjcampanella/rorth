@@ -41,6 +41,8 @@ $ make compile_run
 | Name | Signature                              | Description                                                  |
 | ---  | ---                                    | ---                                                          |
 | `=` | `[a: int] [b: int] -- [a == b : bool]`  | checks if two elements on top of the stack are equal.        |
+| `>` | `[a: int] [b: int] -- [a > b : bool]`   | checks if a is greater than b.                               |
+| `<` | `[a: int] [b: int] -- [a < b : bool]`   | checks if a is less than b.                                  |
 
 ### Arithmetic
 

@@ -16,3 +16,9 @@
 
 // Test large nums. Numbers larger than this are not supported in compliation mode.
 12345 print
+
+10 20 > print               // prints 0
+100 20 > print              // prints 1
+
+10 20 < print               // prints 1
+100 20 < print              // prints 0

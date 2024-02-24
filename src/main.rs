@@ -15,6 +15,8 @@ extern crate static_assertions;
 enum OpKind {
     Push,
     If,
+    While,
+    Do,
     End,
     Plus,
     Minus,
@@ -25,6 +27,8 @@ enum OpKind {
     Rot,
     Drop,
     Over,
+    GT,
+    LT,
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -56,7 +60,7 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
         let words: Vec<&str> = line.split_ascii_whitespace().collect();
         for word in words {
             // Exhaustive handling of OpKinds in parse_word_as_op
-            const_assert!(OpKind::COUNT == 12);
+            const_assert!(OpKind::COUNT == 16);
             if let Ok(num) = word.parse::<u32>() {
                 result.push(Op {
                     kind: OpKind::Push,
@@ -112,13 +116,33 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
                     kind: OpKind::If,
                     value: None,
                 });
+            } else if word == "while" {
+                result.push(Op {
+                    kind: OpKind::While,
+                    value: None,
+                });
+            } else if word == "do" {
+                result.push(Op {
+                    kind: OpKind::Do,
+                    value: None,
+                });
             } else if word == "end" {
                 result.push(Op {
                     kind: OpKind::End,
                     value: None,
                 });
+            } else if word == ">" {
+                result.push(Op {
+                    kind: OpKind::GT,
+                    value: None,
+                });
+            } else if word == "<" {
+                result.push(Op {
+                    kind: OpKind::LT,
+                    value: None,
+                });
             } else {
-                panic!("Unimplemented word: {word}")
+                panic!("Unknown word: {word}")
             }
         }
     }
@@ -130,24 +154,58 @@ fn cross_reference_blocks(program: &mut Vec<Op>, ip_start: usize) {
     let mut ip = ip_start;
     let mut curr_if = None;
     let mut curr_if_ip = 0;
+    let mut curr_while = None;
+    let mut curr_while_ip = 0;
+    let mut curr_do = None;
+    let mut curr_do_ip = 0;
     while ip < program.len() {
         let mut op = program[ip];
+        // Exhaustive handling of Ops in cross_reference_blocks. Remember not all need to be
+        // accounted for here only Ops that form blocks.
+        const_assert!(OpKind::COUNT == 16);
         if op.kind == OpKind::If {
             if curr_if.is_none() && op.value.is_none() {
                 curr_if = Some(op);
                 curr_if_ip = ip;
-            } else if curr_if.is_some() {
+            } else if curr_if.is_some() && op.value.is_none() {
+                cross_reference_blocks(program, ip);
+            }
+        } else if op.kind == OpKind::While {
+            curr_while = Some(op);
+            curr_while_ip = ip;
+        }
+        if op.kind == OpKind::Do {
+            if curr_do.is_none() && op.value.is_none() {
+                curr_do = Some(op);
+                curr_do_ip = ip;
+            } else if curr_do.is_some() {
                 cross_reference_blocks(program, ip);
             }
         } else if op.kind == OpKind::End {
             if let Some(mut if_op) = curr_if {
                 if if_op.value.is_none() && op.value.is_none() {
-                    if_op.value = ip.try_into().ok();
+                    if_op.value = (ip + 1).try_into().ok();
                     op.value = ip.try_into().ok();
                     program[curr_if_ip] = if_op;
                     program[ip] = op;
                     curr_if = None;
                     curr_if_ip = 0;
+                }
+            }
+
+            if let Some(_while_op) = curr_while {
+                op.value = curr_while_ip.try_into().ok();
+                program[ip] = op;
+                curr_while = None;
+                curr_while_ip = 0;
+            }
+
+            if let Some(mut do_op) = curr_do {
+                if do_op.value.is_none() {
+                    do_op.value = (ip + 1).try_into().ok();
+                    program[curr_do_ip] = do_op;
+                    curr_do = None;
+                    curr_do_ip = 0;
                 }
             }
         }
@@ -255,7 +313,45 @@ fn simulate_program(program: &[Op]) {
                     }
                 }
             }
+            OpKind::While => {
+                ip += 1;
+            }
+            OpKind::Do => {
+                if let Some(a) = stack.pop() {
+                    if a == 1 {
+                        ip += 1;
+                    } else if let Some(ind) = op.value {
+                        if let Ok(ind) = ind.try_into() {
+                            ip = ind;
+                        }
+                    }
+                }
+            }
             OpKind::End => {
+                if let Some(ind) = op.value {
+                    if let Ok(ind) = ind.try_into() {
+                        if ind != ip {
+                            ip = ind;
+                            continue;
+                        }
+                    }
+                }
+                ip += 1;
+            }
+            OpKind::GT => {
+                if let Some(a) = stack.pop() {
+                    if let Some(b) = stack.pop() {
+                        stack.push((b > a).into());
+                    }
+                }
+                ip += 1;
+            }
+            OpKind::LT => {
+                if let Some(a) = stack.pop() {
+                    if let Some(b) = stack.pop() {
+                        stack.push((b < a).into());
+                    }
+                }
                 ip += 1;
             }
         }
@@ -395,8 +491,46 @@ fn compile_program_darwin_arm64(program: &[Op], filename: &str) {
                     }
                     ip += 1;
                 }
-                OpKind::End => {
+                OpKind::While => {
                     let _ = file.write(format!("addr_{ip}:\n").as_bytes());
+                    ip += 1;
+                }
+                OpKind::Do => {
+                    let _ = file.write(b"    // do \n");
+                    let _ = file.write(b"    ldr x0, [sp], #16\n");
+                    let _ = file.write(b"    cmp x0, #0\n");
+                    if let Some(ind) = op.value {
+                        let _ = file.write(format!("    beq addr_{ind}\n").as_bytes());
+                    }
+                    ip += 1;
+                }
+                OpKind::End => {
+                    if let Some(ind) = op.value {
+                        if let Ok(ind) = TryInto::<usize>::try_into(ind) {
+                            if ind != ip {
+                                let _ = file.write(format!("    b addr_{ind}\n").as_bytes());
+                            }
+                        }
+                    }
+                    ip += 1;
+                    let _ = file.write(format!("addr_{ip}:\n").as_bytes());
+                }
+                OpKind::GT => {
+                    let _ = file.write(b"    // > \n");
+                    let _ = file.write(b"    ldr x0, [sp], #16\n");
+                    let _ = file.write(b"    ldr x1, [sp], #16\n");
+                    let _ = file.write(b"    cmp x1, x0\n");
+                    let _ = file.write(b"    cset w0, GE\n");
+                    let _ = file.write(b"    str w0, [sp, #-16]!\n");
+                    ip += 1;
+                }
+                OpKind::LT => {
+                    let _ = file.write(b"    // > \n");
+                    let _ = file.write(b"    ldr x0, [sp], #16\n");
+                    let _ = file.write(b"    ldr x1, [sp], #16\n");
+                    let _ = file.write(b"    cmp x1, x0\n");
+                    let _ = file.write(b"    cset w0, LT\n");
+                    let _ = file.write(b"    str w0, [sp, #-16]!\n");
                     ip += 1;
                 }
             }

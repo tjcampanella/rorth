@@ -1,0 +1,5 @@
+// Prints 0 -> 9
+0 while dup 10 < do
+    dup print
+    1 +
+end
