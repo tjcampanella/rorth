@@ -14,8 +14,8 @@
 
 9 2 over print print print  //prints 9 2 9
 
-// Test large nums. Numbers larger than this are not supported in compliation mode.
-12345 print
+// Test large nums. Numbers larger than 64bits are not supported.
+12345678912345678912 print
 
 10 20 > print               // prints 0
 100 20 > print              // prints 1

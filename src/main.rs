@@ -34,7 +34,7 @@ enum OpKind {
 #[derive(Debug, Clone, Copy)]
 struct Op {
     kind: OpKind,
-    value: Option<u32>,
+    value: Option<u64>,
 }
 
 fn parse_file(filename: String) -> Result<Vec<String>, ()> {
@@ -61,7 +61,7 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
         for word in words {
             // Exhaustive handling of OpKinds in parse_word_as_op
             const_assert!(OpKind::COUNT == 16);
-            if let Ok(num) = word.parse::<u32>() {
+            if let Ok(num) = word.parse::<u64>() {
                 result.push(Op {
                     kind: OpKind::Push,
                     value: Some(num),
@@ -260,9 +260,11 @@ fn simulate_program(program: &[Op]) {
             OpKind::Print => {
                 if let Some(a) = stack.pop() {
                     let mut a = format!("{a}");
-                    let num_to_pad = 8 - a.len();
-                    for _ in 0..num_to_pad {
-                        a.insert(0, '\0');
+                    if a.len() < 20 {
+                        let num_to_pad = 20 - a.len();
+                        for _ in 0..num_to_pad {
+                            a.insert(0, '\0');
+                        }
                     }
                     println!("{a}");
                 }
@@ -378,9 +380,9 @@ fn compile_program_darwin_arm64(program: &[Op], filename: &str) {
         let _ = file.write(b"    add x0, x0, num@PAGEOFF\n");
         let _ = file.write(b"    ldr   x1, [sp], #16\n");
         let _ = file.write(b"    mov x2, #10\n");
-        let _ = file.write(b"    mov x3, #7\n");
+        let _ = file.write(b"    mov x3, #19\n");
         let _ = file.write(b"convert_loop:\n");
-        let _ = file.write(b"    sdiv x4, x1, x2\n");
+        let _ = file.write(b"    udiv x4, x1, x2\n");
         let _ = file.write(b"    mul x5, x4, x2\n");
         let _ = file.write(b"    sub x6, x1, x5 \n");
         let _ = file.write(b"    and w6, w6, #0xFF\n");
@@ -394,7 +396,7 @@ fn compile_program_darwin_arm64(program: &[Op], filename: &str) {
         let _ = file.write(b"    add x4, x4, num@PAGEOFF\n");
         let _ = file.write(b"    mov x1, x4\n");
         let _ = file.write(b"    mov x0, #1\n");
-        let _ = file.write(b"    mov x2, #8\n");
+        let _ = file.write(b"    mov x2, #20\n");
         let _ = file.write(b"    mov x16, #4\n");
         let _ = file.write(b"    svc #0x80\n");
         let _ = file.write(b"    adrp x0, newline@PAGE\n");
@@ -404,9 +406,12 @@ fn compile_program_darwin_arm64(program: &[Op], filename: &str) {
         let _ = file.write(b"    mov x2, #1\n");
         let _ = file.write(b"    mov x16, #4 \n");
         let _ = file.write(b"    svc #0x80\n");
-        let _ = file.write(b"    mov x3, #0\n");
-        let _ = file.write(b"    str x3, [x4]\n");
-        let _ = file.write(b"    ret\n\n");
+        let _ = file.write(b"	mov x1, #20\n");
+        let _ = file.write(b"loop:\n");
+        let _ = file.write(b"	strb wzr, [x4], #1\n");
+        let _ = file.write(b"	subs x1, x1, #1\n");
+        let _ = file.write(b"	bne loop\n");
+        let _ = file.write(b"	ret\n\n");
         let _ = file.write(b"_start: \n");
 
         let mut ip = 0;
@@ -416,7 +421,7 @@ fn compile_program_darwin_arm64(program: &[Op], filename: &str) {
                 OpKind::Push => {
                     if let Some(val) = op.value {
                         let _ = file.write(b"    // push \n");
-                        let _ = file.write(format!("    mov x0, #{val}\n").as_bytes());
+                        let _ = file.write(format!("    ldr x0, ={val}\n").as_bytes());
                         let _ = file.write("    str x0, [sp, #-16]!\n".to_string().as_bytes());
                     }
                     ip += 1;
@@ -549,7 +554,7 @@ fn compile_program_darwin_arm64(program: &[Op], filename: &str) {
         let _ = file.write(b"    mov x16, #1\n");
         let _ = file.write(b"    svc #0x80\n\n");
         let _ = file.write(b".data\n");
-        let _ = file.write(b"    num: .zero 8\n");
+        let _ = file.write(b"    num: .zero 20\n");
         let _ = file.write(b"    newline: .asciz \"\\n\" \n");
     }
 }
