@@ -46,7 +46,7 @@ $ make compile_run
 
 ### Arithmetic
 
-| Name     | Signature                                        | Description                                                                                                              |
-| ---      | ---                                              | ---                                                                                                                      |
-| `+`      | `[a: int] [b: int] -- [a + b: int]`              | sums up two elements on the top of the stack.                                                                            |
-| `-`      | `[a: int] [b: int] -- [a - b: int]`              | subtracts two elements on the top of the stack                                                                           |
+| Name     | Signature                                        | Description                                      |
+| ---      | ---                                              | ---                                              |
+| `+`      | `[a: int] [b: int] -- [a + b: int]`              | sums up two elements on the top of the stack.    |
+| `-`      | `[a: int] [b: int] -- [a - b: int]`              | subtracts two elements on the top of the stack . |
