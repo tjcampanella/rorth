@@ -9,8 +9,7 @@ $ cargo run sim examples/stack.rorth
 
 ## Usage compilation (Right now only Apple Silicon is supported for compilation)
 ```bash
-$ cargo run com examples/stack.rorth
-$ make compile_run
+$ cargo run com -r -s examples/stack.rorth
 ```
 
 ## Development Milestones
