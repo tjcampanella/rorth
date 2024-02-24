@@ -29,7 +29,7 @@ syntax region rorthChar start=/\v'/ skip=/\v\\./ end=/\v'/ contains=rorthEscapes
 syntax match rorthEscapes display contained "\\[nr\"']"
 
 " Number literals
-syntax region rorthNumber start=/\s\d/ skip=/\d/ end=/\s/
+syntax region rorthNumber start=/\d/ skip=/\d/ end=/\s/
 
 " Type names the compiler recognizes
 syntax keyword rorthTypeNames addr int ptr bool
