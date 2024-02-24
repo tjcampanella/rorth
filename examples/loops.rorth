@@ -3,3 +3,14 @@
     dup print
     1 +
 end
+
+// Prints 0 1 2 three times
+0 while dup 3 < do
+    
+    0 while dup 3 < do
+        dup print
+        1 +
+    end drop
+
+    1 +
+end

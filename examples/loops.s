@@ -53,7 +53,7 @@ addr_1:
     mov x0, #10
     str x0, [sp, #-16]!
 
-    // > 
+    // < 
     ldr x0, [sp], #16
     ldr x1, [sp], #16
     cmp x1, x0
@@ -85,6 +85,97 @@ addr_1:
 
     b addr_1
 addr_11:
+
+    // push 
+    mov x0, #0
+    str x0, [sp, #-16]!
+
+addr_12:
+
+    // dup 
+    ldr x0, [sp], #16
+    str x0, [sp, #-16]!
+    str x0, [sp, #-16]!
+
+    // push 
+    mov x0, #3
+    str x0, [sp, #-16]!
+
+    // < 
+    ldr x0, [sp], #16
+    ldr x1, [sp], #16
+    cmp x1, x0
+    cset w0, LT
+    str w0, [sp, #-16]!
+
+    // do 
+    ldr x0, [sp], #16
+    cmp x0, #0
+    beq addr_32
+
+    // push 
+    mov x0, #0
+    str x0, [sp, #-16]!
+
+addr_18:
+
+    // dup 
+    ldr x0, [sp], #16
+    str x0, [sp, #-16]!
+    str x0, [sp, #-16]!
+
+    // push 
+    mov x0, #3
+    str x0, [sp, #-16]!
+
+    // < 
+    ldr x0, [sp], #16
+    ldr x1, [sp], #16
+    cmp x1, x0
+    cset w0, LT
+    str w0, [sp, #-16]!
+
+    // do 
+    ldr x0, [sp], #16
+    cmp x0, #0
+    beq addr_28
+
+    // dup 
+    ldr x0, [sp], #16
+    str x0, [sp, #-16]!
+    str x0, [sp, #-16]!
+
+    // print 
+    bl print
+
+    // push 
+    mov x0, #1
+    str x0, [sp, #-16]!
+
+    // plus 
+    ldr x0, [sp], #16
+    ldr x1, [sp], #16
+    add x3, x0, x1
+    str x3, [sp, #-16]!
+
+    b addr_18
+addr_28:
+
+    // drop 
+    ldr x0, [sp], #16
+
+    // push 
+    mov x0, #1
+    str x0, [sp, #-16]!
+
+    // plus 
+    ldr x0, [sp], #16
+    ldr x1, [sp], #16
+    add x3, x0, x1
+    str x3, [sp, #-16]!
+
+    b addr_12
+addr_32:
 
     // exit syscall
     mov x0, #0

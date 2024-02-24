@@ -171,14 +171,18 @@ fn cross_reference_blocks(program: &mut Vec<Op>, ip_start: usize) {
                 cross_reference_blocks(program, ip);
             }
         } else if op.kind == OpKind::While {
-            curr_while = Some(op);
-            curr_while_ip = ip;
+            if curr_while.is_none() && op.value.is_none() {
+                curr_while = Some(op);
+                curr_while_ip = ip;
+            } else if curr_while.is_some() && op.value.is_none() {
+                cross_reference_blocks(program, ip);
+            }
         }
         if op.kind == OpKind::Do {
             if curr_do.is_none() && op.value.is_none() {
                 curr_do = Some(op);
                 curr_do_ip = ip;
-            } else if curr_do.is_some() {
+            } else if curr_do.is_some() && op.value.is_none() {
                 cross_reference_blocks(program, ip);
             }
         } else if op.kind == OpKind::End {
@@ -193,19 +197,23 @@ fn cross_reference_blocks(program: &mut Vec<Op>, ip_start: usize) {
                 }
             }
 
-            if let Some(_while_op) = curr_while {
-                op.value = curr_while_ip.try_into().ok();
-                program[ip] = op;
-                curr_while = None;
-                curr_while_ip = 0;
-            }
+            if let Some(mut while_op) = curr_while {
+                if let Some(mut do_op) = curr_do {
+                    if while_op.value.is_none() && op.value.is_none() {
+                        while_op.value = Some(0);
+                        op.value = curr_while_ip.try_into().ok();
+                        program[ip] = op;
+                        program[curr_while_ip] = while_op;
+                        curr_while = None;
+                        curr_while_ip = 0;
 
-            if let Some(mut do_op) = curr_do {
-                if do_op.value.is_none() {
-                    do_op.value = (ip + 1).try_into().ok();
-                    program[curr_do_ip] = do_op;
-                    curr_do = None;
-                    curr_do_ip = 0;
+                        if do_op.value.is_none() {
+                            do_op.value = (ip + 1).try_into().ok();
+                            program[curr_do_ip] = do_op;
+                            curr_do = None;
+                            curr_do_ip = 0;
+                        }
+                    }
                 }
             }
         }
@@ -525,7 +533,7 @@ fn compile_program_darwin_arm64(program: &[Op], filename: &str) {
                     ip += 1;
                 }
                 OpKind::LT => {
-                    let _ = file.write(b"    // > \n");
+                    let _ = file.write(b"    // < \n");
                     let _ = file.write(b"    ldr x0, [sp], #16\n");
                     let _ = file.write(b"    ldr x1, [sp], #16\n");
                     let _ = file.write(b"    cmp x1, x0\n");
