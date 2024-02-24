@@ -20,9 +20,8 @@ Cargo.lock
 
 *.o
 out*
-stack.s
+examples/*.s
 stack
-control-flow.s
 control-flow
-
+loops
 
