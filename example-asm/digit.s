@@ -7,7 +7,7 @@ print:
     add x0, x0, num@PAGEOFF
 
     // Load value from the stack.
-    ldr x1, [sp], #64
+    ldr x1, [sp], #16
 
     // Convert number in x1 to its ASCII representation
     mov x2, #10              // Base 10
@@ -28,21 +28,32 @@ convert_loop:
     mov x1, x4               // Update x1 with quotient
 
     cmp x1, #0               // Check if quotient is zero
-    bne convert_loop         // If not zero, continue loop
+    beq zero_done           // If quotient is zero, terminate early
 
+    cmp x3, #0               // Check if index is zero
+    beq zero_done           // If index is zero, terminate early
+
+    b convert_loop         // If not zero, continue loop
+
+zero_done:
     // Recompute the address of num
     adrp x4, num@PAGE
     add x4, x4, num@PAGEOFF
 
+    // Find the actual length of the converted number
+    mov x2, #20               // Length of num
+
+    sub x2, x2, x3          // Subtract remaining index from the total length
+    add x4, x4, x3           // Move the address forward by the remaining index
+
     mov x1, x4               // Load the correct address into x1
 
-
     mov x0, #1               // 1 = StdOut
-    mov x2, #20               // Length of num
     mov x16, #4              // Unix write system call
     svc #0x80                 // Call kernel to output the string
 
 	// Print newline character
+    mov x0, #0
     adrp x0, newline@PAGE
     add x0, x0, newline@PAGEOFF
 
@@ -65,11 +76,11 @@ loop:
 _start: 
     // push 
     ldr x0, =34
-    str x0, [sp, #-64]!
+    str x0, [sp, #-16]!
 
     // push 
     ldr x0, =12345678912345678912
-    str x0, [sp, #-64]!
+    str x0, [sp, #-16]!
 
     bl print
 

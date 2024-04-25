@@ -22,3 +22,5 @@
 
 10 20 < print               // prints 1
 100 20 < print              // prints 0
+
+2 rot

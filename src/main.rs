@@ -312,7 +312,7 @@ fn simulate_program(program: &[Op]) {
                 }
                 ip += 1;
             }
-            OpKind::If => {
+            OpKind::If | OpKind::Do => {
                 if let Some(a) = stack.pop() {
                     if a == 1 {
                         ip += 1;
@@ -325,17 +325,6 @@ fn simulate_program(program: &[Op]) {
             }
             OpKind::While => {
                 ip += 1;
-            }
-            OpKind::Do => {
-                if let Some(a) = stack.pop() {
-                    if a == 1 {
-                        ip += 1;
-                    } else if let Some(ind) = op.value {
-                        if let Ok(ind) = ind.try_into() {
-                            ip = ind;
-                        }
-                    }
-                }
             }
             OpKind::End => {
                 if let Some(ind) = op.value {
@@ -562,7 +551,7 @@ fn compile_program_darwin_arm64(program: &[Op], filename: &str) {
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 {
-        eprintln!("[ERROR] You have to pass in a mode and a file path.");
+        eprintln!("ERROR: You have to pass in a mode and a file path.");
         eprintln!("Usage: rorth [OPTIONS] <SUBCOMMAND> [ARGS]");
         eprintln!("  SUBCOMMAND:");
         eprintln!("    sim <file>            Simulate the program");
@@ -583,7 +572,7 @@ fn main() {
         } else if &args[2] == "-s" {
             silence_flag = true;
         } else {
-            eprintln!("[ERROR] Unknown option: {}", &args[2]);
+            eprintln!("ERROR: Unknown option: {}", &args[2]);
             eprintln!("Usage: rorth [OPTIONS] <SUBCOMMAND> [ARGS]");
             eprintln!("  SUBCOMMAND:");
             eprintln!("    sim <file>            Simulate the program");
@@ -598,7 +587,7 @@ fn main() {
 
     if args.len() > 4 {
         if &args[2] != "-r" && &args[2] != "-s" {
-            eprintln!("[ERROR] Unknown option: {}", &args[2]);
+            eprintln!("ERROR: Unknown option: {}", &args[2]);
             eprintln!("Usage: rorth [OPTIONS] <SUBCOMMAND> [ARGS]");
             eprintln!("  SUBCOMMAND:");
             eprintln!("    sim <file>            Simulate the program");
@@ -610,7 +599,7 @@ fn main() {
         }
 
         if &args[3] != "-r" && &args[3] != "-s" {
-            eprintln!("[ERROR] Unknown option: {}", &args[3]);
+            eprintln!("ERROR: Unknown option: {}", &args[3]);
             eprintln!("Usage: rorth [OPTIONS] <SUBCOMMAND> [ARGS]");
             eprintln!("  SUBCOMMAND:");
             eprintln!("    sim <file>            Simulate the program");
@@ -691,7 +680,7 @@ fn main() {
                                 }
 
                                 if let Some(err) = res.err() {
-                                    eprintln!("[ERROR] Failed to execute compiled program: {err}");
+                                    eprintln!("ERROR: Failed to execute compiled program: {err}");
                                 }
                             }
                         }
@@ -699,11 +688,11 @@ fn main() {
                 }
             }
         } else {
-            eprintln!("[ERROR] Unknown mode '{mode}'");
+            eprintln!("ERROR: Unknown mode '{mode}'");
             exit(1);
         }
     } else {
-        eprintln!("[ERROR] Cannot read file: {filename}");
+        eprintln!("ERROR: Cannot read file: {filename}");
         exit(1);
     }
 }
