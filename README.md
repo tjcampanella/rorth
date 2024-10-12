@@ -50,3 +50,4 @@ $ cargo run com -r -s examples/stack.rorth
 | `+`      | `[a: int] [b: int] -- [a + b: int]`              | sums up two elements on the top of the stack.    |
 | `-`      | `[a: int] [b: int] -- [a - b: int]`              | subtracts two elements on the top of the stack.  |
 | `*`      | `[a: int] [b: int] -- [a * b: int]`              | multiplies two elements on the top of the stack. |
+| `/`      | `[a: int] [b: int] -- [a / b: int]`              | divides two elements on the top of the stack.    |

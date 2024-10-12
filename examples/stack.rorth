@@ -7,6 +7,11 @@
 5 3 * print                 //prints 15
 11 9 * print                //prints 99
 
+9 3 / print                 //prints 3
+45 5 / print                //prints 9
+100 10 / print              //prints 10
+100 3 / print               //prints 33
+
 69 dup print print          //prints 69 twice
 
 1 2 swap print print        //prints 2 then 1
