@@ -160,8 +160,8 @@ fn cross_reference_blocks(program: &mut Vec<Op>, ip_start: usize) {
     let mut curr_do_ip = 0;
     while ip < program.len() {
         let mut op = program[ip];
-        // Exhaustive handling of Ops in cross_reference_blocks. Remember not all need to be
-        // accounted for here only Ops that form blocks.
+        // Exhaustive handling of Ops in cross_reference_blocks.
+        // Remember not all need to be accounted for here only Ops that form blocks.
         const_assert!(OpKind::COUNT == 16);
         if op.kind == OpKind::If {
             if curr_if.is_none() && op.value.is_none() {
@@ -548,17 +548,21 @@ fn compile_program_darwin_arm64(program: &[Op], filename: &str) {
     }
 }
 
+fn print_usage() {
+    println!("Usage: rorth [OPTIONS] <SUBCOMMAND> [ARGS]");
+    println!("  SUBCOMMAND:");
+    println!("    sim <file>            Simulate the program");
+    println!("    com [OPTIONS] <file>  Compile the program");
+    println!("      OPTIONS:");
+    println!("        -r                  Run the program after successful compilation");
+    println!("        -s                  Silence all logging statements.");
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 3 {
         eprintln!("ERROR: You have to pass in a mode and a file path.");
-        eprintln!("Usage: rorth [OPTIONS] <SUBCOMMAND> [ARGS]");
-        eprintln!("  SUBCOMMAND:");
-        eprintln!("    sim <file>            Simulate the program");
-        eprintln!("    com [OPTIONS] <file>  Compile the program");
-        eprintln!("      OPTIONS:");
-        eprintln!("        -r                  Run the program after successful compilation");
-        eprintln!("        -s                  Silence all logging statements.");
+        print_usage();
         exit(1);
     }
 
@@ -573,13 +577,7 @@ fn main() {
             silence_flag = true;
         } else {
             eprintln!("ERROR: Unknown option: {}", &args[2]);
-            eprintln!("Usage: rorth [OPTIONS] <SUBCOMMAND> [ARGS]");
-            eprintln!("  SUBCOMMAND:");
-            eprintln!("    sim <file>            Simulate the program");
-            eprintln!("    com [OPTIONS] <file>  Compile the program");
-            eprintln!("      OPTIONS:");
-            eprintln!("        -r                  Run the program after successful compilation");
-            eprintln!("        -s                  Silence all logging statements.");
+            print_usage();
             exit(1);
         }
         filename = &args[3];
@@ -588,25 +586,13 @@ fn main() {
     if args.len() > 4 {
         if &args[2] != "-r" && &args[2] != "-s" {
             eprintln!("ERROR: Unknown option: {}", &args[2]);
-            eprintln!("Usage: rorth [OPTIONS] <SUBCOMMAND> [ARGS]");
-            eprintln!("  SUBCOMMAND:");
-            eprintln!("    sim <file>            Simulate the program");
-            eprintln!("    com [OPTIONS] <file>  Compile the program");
-            eprintln!("      OPTIONS:");
-            eprintln!("        -r                  Run the program after successful compilation");
-            eprintln!("        -s                  Silence all logging statements.");
+            print_usage();
             exit(1);
         }
 
         if &args[3] != "-r" && &args[3] != "-s" {
             eprintln!("ERROR: Unknown option: {}", &args[3]);
-            eprintln!("Usage: rorth [OPTIONS] <SUBCOMMAND> [ARGS]");
-            eprintln!("  SUBCOMMAND:");
-            eprintln!("    sim <file>            Simulate the program");
-            eprintln!("    com [OPTIONS] <file>  Compile the program");
-            eprintln!("      OPTIONS:");
-            eprintln!("        -r                  Run the program after successful compilation");
-            eprintln!("        -s                  Silence all logging statements.");
+            print_usage();
             exit(1);
         }
 
