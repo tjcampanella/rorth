@@ -18,7 +18,6 @@ $ cargo run com -r -s examples/stack.rorth
 - [ ] Turing-complete
 - [ ] Statically typed (the type checking is inspired by [WASM validation](https://binji.github.io/posts/webassembly-type-checking/))
 - [ ] [Self-hosted](https://en.wikipedia.org/wiki/Self-hosting_(compilers)) 
-- [ ] More or else close in convenience to C
 - [ ] Optimized
 - [ ] Crossplatform
 
