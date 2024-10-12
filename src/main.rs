@@ -20,6 +20,7 @@ enum OpKind {
     End,
     Plus,
     Minus,
+    Mult,
     Print,
     Equals,
     Dup,
@@ -60,7 +61,7 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
         let words: Vec<&str> = line.split_ascii_whitespace().collect();
         for word in words {
             // Exhaustive handling of OpKinds in parse_word_as_op
-            const_assert!(OpKind::COUNT == 16);
+            const_assert!(OpKind::COUNT == 17);
             if let Ok(num) = word.parse::<u64>() {
                 result.push(Op {
                     kind: OpKind::Push,
@@ -74,6 +75,11 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
             } else if word == "-" {
                 result.push(Op {
                     kind: OpKind::Minus,
+                    value: None,
+                });
+            } else if word == "*" {
+                result.push(Op {
+                    kind: OpKind::Mult,
                     value: None,
                 });
             } else if word == "print" {
@@ -162,7 +168,7 @@ fn cross_reference_blocks(program: &mut Vec<Op>, ip_start: usize) {
         let mut op = program[ip];
         // Exhaustive handling of Ops in cross_reference_blocks.
         // Remember not all need to be accounted for here only Ops that form blocks.
-        const_assert!(OpKind::COUNT == 16);
+        const_assert!(OpKind::COUNT == 17);
         if op.kind == OpKind::If {
             if curr_if.is_none() && op.value.is_none() {
                 curr_if = Some(op);
@@ -245,6 +251,14 @@ fn simulate_program(program: &[Op]) {
                 if let Some(a) = stack.pop() {
                     if let Some(b) = stack.pop() {
                         stack.push(b - a);
+                    }
+                }
+                ip += 1;
+            }
+            OpKind::Mult => {
+                if let Some(a) = stack.pop() {
+                    if let Some(b) = stack.pop() {
+                        stack.push(a * b);
                     }
                 }
                 ip += 1;
@@ -428,6 +442,14 @@ fn compile_program_darwin_arm64(program: &[Op], filename: &str) {
                     let _ = file.write(b"    ldr x0, [sp], #16\n");
                     let _ = file.write(b"    ldr x1, [sp], #16\n");
                     let _ = file.write(b"    sub x3, x1, x0\n");
+                    let _ = file.write(b"    str x3, [sp, #-16]!\n");
+                    ip += 1;
+                }
+                OpKind::Mult => {
+                    let _ = file.write(b"    // mult \n");
+                    let _ = file.write(b"    ldr x0, [sp], #16\n");
+                    let _ = file.write(b"    ldr x1, [sp], #16\n");
+                    let _ = file.write(b"    mul x3, x1, x0\n");
                     let _ = file.write(b"    str x3, [sp, #-16]!\n");
                     ip += 1;
                 }

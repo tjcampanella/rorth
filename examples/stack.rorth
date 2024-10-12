@@ -4,6 +4,9 @@
 100 31 - print              //prints 69
 440 20 - print              //prints 420
 
+5 3 * print                 //prints 15
+11 9 * print                //prints 99
+
 69 dup print print          //prints 69 twice
 
 1 2 swap print print        //prints 2 then 1
@@ -24,3 +27,4 @@
 100 20 < print              // prints 0
 
 2 rot
+
