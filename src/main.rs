@@ -23,6 +23,7 @@ enum OpKind {
     Mult,
     Div,
     Print,
+    Write,
     Equals,
     Dup,
     Swap,
@@ -33,10 +34,16 @@ enum OpKind {
     LT,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, PartialEq, PartialOrd)]
+enum OpValue {
+    IntVal(u64),
+    StringVal(String),
+}
+
+#[derive(Debug, Clone)]
 struct Op {
     kind: OpKind,
-    value: Option<u64>,
+    value: Option<OpValue>,
 }
 
 fn parse_file(filename: String) -> Result<Vec<String>, ()> {
@@ -59,96 +66,128 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
         if let Some(comment_ind) = comment {
             line = line.chars().take(comment_ind).collect();
         }
-        let words: Vec<&str> = line.split_ascii_whitespace().collect();
+        let words: Vec<&str> = line.split_inclusive(['\n', '"', ' ']).collect();
+        let mut curr_string: String = String::new();
         for word in words {
             // Exhaustive handling of OpKinds in parse_word_as_op
-            const_assert!(OpKind::COUNT == 18);
-            if let Ok(num) = word.parse::<u64>() {
+            const_assert!(OpKind::COUNT == 19);
+            use OpValue::{IntVal, StringVal};
+            let trimmed_word = word.trim();
+            // println!("word |{word}|");
+            // println!("tw |{trimmed_word}|");
+            if trimmed_word.is_empty() && curr_string.is_empty() {
+                continue;
+            }
+            if let Ok(num) = trimmed_word.parse::<u64>() {
                 result.push(Op {
                     kind: OpKind::Push,
-                    value: Some(num),
+                    value: Some(IntVal(num)),
                 });
-            } else if word == "+" {
+            } else if curr_string.starts_with('"')
+                && curr_string.ends_with('"')
+                && curr_string.chars().count() > 1
+            {
+                result.push(Op {
+                    kind: OpKind::Push,
+                    value: Some(StringVal(curr_string.clone().replace('"', ""))),
+                });
+                curr_string = String::new();
+            } else if word == "\"" && curr_string.is_empty() {
+                curr_string += word;
+            } else if word == "\"" && !curr_string.is_empty() {
+                result.push(Op {
+                    kind: OpKind::Push,
+                    value: Some(StringVal(curr_string.clone().replace('"', ""))),
+                });
+                curr_string = String::new();
+            } else if !curr_string.is_empty() {
+                curr_string += word;
+            } else if trimmed_word == "+" {
                 result.push(Op {
                     kind: OpKind::Plus,
                     value: None,
                 });
-            } else if word == "-" {
+            } else if trimmed_word == "-" {
                 result.push(Op {
                     kind: OpKind::Minus,
                     value: None,
                 });
-            } else if word == "*" {
+            } else if trimmed_word == "*" {
                 result.push(Op {
                     kind: OpKind::Mult,
                     value: None,
                 });
-            } else if word == "/" {
+            } else if trimmed_word == "/" {
                 result.push(Op {
                     kind: OpKind::Div,
                     value: None,
                 });
-            } else if word == "print" {
+            } else if trimmed_word == "print" {
                 result.push(Op {
                     kind: OpKind::Print,
                     value: None,
                 });
-            } else if word == "=" {
+            } else if trimmed_word == "write" {
+                result.push(Op {
+                    kind: OpKind::Write,
+                    value: None,
+                });
+            } else if trimmed_word == "=" {
                 result.push(Op {
                     kind: OpKind::Equals,
                     value: None,
                 });
-            } else if word == "dup" {
+            } else if trimmed_word == "dup" {
                 result.push(Op {
                     kind: OpKind::Dup,
                     value: None,
                 });
-            } else if word == "swap" {
+            } else if trimmed_word == "swap" {
                 result.push(Op {
                     kind: OpKind::Swap,
                     value: None,
                 });
-            } else if word == "rot" {
+            } else if trimmed_word == "rot" {
                 result.push(Op {
                     kind: OpKind::Rot,
                     value: None,
                 });
-            } else if word == "drop" {
+            } else if trimmed_word == "drop" {
                 result.push(Op {
                     kind: OpKind::Drop,
                     value: None,
                 });
-            } else if word == "over" {
+            } else if trimmed_word == "over" {
                 result.push(Op {
                     kind: OpKind::Over,
                     value: None,
                 });
-            } else if word == "if" {
+            } else if trimmed_word == "if" {
                 result.push(Op {
                     kind: OpKind::If,
                     value: None,
                 });
-            } else if word == "while" {
+            } else if trimmed_word == "while" {
                 result.push(Op {
                     kind: OpKind::While,
                     value: None,
                 });
-            } else if word == "do" {
+            } else if trimmed_word == "do" {
                 result.push(Op {
                     kind: OpKind::Do,
                     value: None,
                 });
-            } else if word == "end" {
+            } else if trimmed_word == "end" {
                 result.push(Op {
                     kind: OpKind::End,
                     value: None,
                 });
-            } else if word == ">" {
+            } else if trimmed_word == ">" {
                 result.push(Op {
                     kind: OpKind::GT,
                     value: None,
                 });
-            } else if word == "<" {
+            } else if trimmed_word == "<" {
                 result.push(Op {
                     kind: OpKind::LT,
                     value: None,
@@ -156,6 +195,7 @@ fn parse_word_as_op(lines: Vec<String>) -> Vec<Op> {
             } else {
                 panic!("Unknown word: {word}")
             }
+            // println!("curr |{curr_string}|");
         }
     }
 
@@ -171,20 +211,21 @@ fn cross_reference_blocks(program: &mut Vec<Op>, ip_start: usize) {
     let mut curr_do = None;
     let mut curr_do_ip = 0;
     while ip < program.len() {
-        let mut op = program[ip];
+        let mut op = program[ip].clone();
         // Exhaustive handling of Ops in cross_reference_blocks.
         // Remember not all need to be accounted for here only Ops that form blocks.
-        const_assert!(OpKind::COUNT == 18);
+        const_assert!(OpKind::COUNT == 19);
+        use OpValue::IntVal;
         if op.kind == OpKind::If {
             if curr_if.is_none() && op.value.is_none() {
-                curr_if = Some(op);
+                curr_if = Some(op.clone());
                 curr_if_ip = ip;
             } else if curr_if.is_some() && op.value.is_none() {
                 cross_reference_blocks(program, ip);
             }
         } else if op.kind == OpKind::While {
             if curr_while.is_none() && op.value.is_none() {
-                curr_while = Some(op);
+                curr_while = Some(op.clone());
                 curr_while_ip = ip;
             } else if curr_while.is_some() && op.value.is_none() {
                 cross_reference_blocks(program, ip);
@@ -198,30 +239,42 @@ fn cross_reference_blocks(program: &mut Vec<Op>, ip_start: usize) {
                 cross_reference_blocks(program, ip);
             }
         } else if op.kind == OpKind::End {
-            if let Some(mut if_op) = curr_if {
+            if let Some(ref mut if_op) = curr_if {
                 if if_op.value.is_none() && op.value.is_none() {
-                    if_op.value = (ip + 1).try_into().ok();
-                    op.value = ip.try_into().ok();
-                    program[curr_if_ip] = if_op;
-                    program[ip] = op;
+                    let ip64: Option<u64> = (ip + 1).try_into().ok();
+                    if let Some(ip64) = ip64 {
+                        if_op.value = Some(IntVal(ip64));
+                    }
+                    let ip64: Option<u64> = ip.try_into().ok();
+                    if let Some(ip64) = ip64 {
+                        op.value = Some(IntVal(ip64));
+                    }
+                    program[curr_if_ip] = if_op.clone();
+                    program[ip] = op.clone();
                     curr_if = None;
                     curr_if_ip = 0;
                 }
             }
 
-            if let Some(mut while_op) = curr_while {
-                if let Some(mut do_op) = curr_do {
+            if let Some(ref mut while_op) = curr_while {
+                if let Some(ref mut do_op) = curr_do {
                     if while_op.value.is_none() && op.value.is_none() {
-                        while_op.value = Some(0);
-                        op.value = curr_while_ip.try_into().ok();
+                        while_op.value = Some(IntVal(0));
+                        let curr_while_ip64: Option<u64> = curr_while_ip.try_into().ok();
+                        if let Some(curr_while_ip64) = curr_while_ip64 {
+                            op.value = Some(IntVal(curr_while_ip64));
+                        }
                         program[ip] = op;
-                        program[curr_while_ip] = while_op;
+                        program[curr_while_ip] = while_op.clone();
                         curr_while = None;
                         curr_while_ip = 0;
 
                         if do_op.value.is_none() {
-                            do_op.value = (ip + 1).try_into().ok();
-                            program[curr_do_ip] = do_op;
+                            let ip64: Option<u64> = (ip + 1).try_into().ok();
+                            if let Some(ip64) = ip64 {
+                                do_op.value = Some(IntVal(ip64));
+                            }
+                            program[curr_do_ip] = do_op.clone();
                             curr_do = None;
                             curr_do_ip = 0;
                         }
@@ -238,41 +291,42 @@ fn simulate_program(program: &[Op]) {
     let mut ip = 0;
     while ip < program.len() {
         let op = &program[ip];
+        use OpValue::{IntVal, StringVal};
         match op.kind {
             OpKind::Push => {
-                if let Some(val) = op.value {
-                    stack.push(val);
+                if let Some(val) = &op.value {
+                    stack.push(val.clone());
                 }
                 ip += 1;
             }
             OpKind::Plus => {
-                if let Some(a) = stack.pop() {
-                    if let Some(b) = stack.pop() {
-                        stack.push(a + b);
+                if let Some(IntVal(a)) = stack.pop() {
+                    if let Some(IntVal(b)) = stack.pop() {
+                        stack.push(IntVal(a + b));
                     }
                 }
                 ip += 1;
             }
             OpKind::Minus => {
-                if let Some(a) = stack.pop() {
-                    if let Some(b) = stack.pop() {
-                        stack.push(b - a);
+                if let Some(IntVal(a)) = stack.pop() {
+                    if let Some(IntVal(b)) = stack.pop() {
+                        stack.push(IntVal(b - a));
                     }
                 }
                 ip += 1;
             }
             OpKind::Mult => {
-                if let Some(a) = stack.pop() {
-                    if let Some(b) = stack.pop() {
-                        stack.push(a * b);
+                if let Some(IntVal(a)) = stack.pop() {
+                    if let Some(IntVal(b)) = stack.pop() {
+                        stack.push(IntVal(a * b));
                     }
                 }
                 ip += 1;
             }
             OpKind::Div => {
-                if let Some(a) = stack.pop() {
-                    if let Some(b) = stack.pop() {
-                        stack.push(b / a);
+                if let Some(IntVal(a)) = stack.pop() {
+                    if let Some(IntVal(b)) = stack.pop() {
+                        stack.push(IntVal(b / a));
                     }
                 }
                 ip += 1;
@@ -280,13 +334,14 @@ fn simulate_program(program: &[Op]) {
             OpKind::Equals => {
                 if let Some(a) = stack.pop() {
                     if let Some(b) = stack.pop() {
-                        stack.push((b == a).into());
+                        stack.push(IntVal((b == a).into()));
                     }
                 }
                 ip += 1;
             }
             OpKind::Print => {
-                if let Some(a) = stack.pop() {
+                let op = stack.pop();
+                if let Some(IntVal(a)) = op {
                     let mut a = format!("{a}");
                     if a.len() < 20 {
                         let num_to_pad = 20 - a.len();
@@ -298,9 +353,20 @@ fn simulate_program(program: &[Op]) {
                 }
                 ip += 1;
             }
+            OpKind::Write => {
+                stack.pop();
+                if let Some(IntVal(fd)) = stack.pop() {
+                    if let Some(StringVal(string)) = stack.pop() {
+                        if fd == 1 {
+                            print!("{string}");
+                        }
+                    }
+                }
+                ip += 1;
+            }
             OpKind::Dup => {
                 if let Some(a) = stack.pop() {
-                    stack.push(a);
+                    stack.push(a.clone());
                     stack.push(a);
                 }
                 ip += 1;
@@ -333,7 +399,7 @@ fn simulate_program(program: &[Op]) {
             OpKind::Over => {
                 if let Some(a) = stack.pop() {
                     if let Some(b) = stack.pop() {
-                        stack.push(b);
+                        stack.push(b.clone());
                         stack.push(a);
                         stack.push(b);
                     }
@@ -341,10 +407,10 @@ fn simulate_program(program: &[Op]) {
                 ip += 1;
             }
             OpKind::If | OpKind::Do => {
-                if let Some(a) = stack.pop() {
+                if let Some(IntVal(a)) = stack.pop() {
                     if a == 1 {
                         ip += 1;
-                    } else if let Some(ind) = op.value {
+                    } else if let Some(IntVal(ind)) = op.value {
                         if let Ok(ind) = ind.try_into() {
                             ip = ind;
                         }
@@ -355,7 +421,7 @@ fn simulate_program(program: &[Op]) {
                 ip += 1;
             }
             OpKind::End => {
-                if let Some(ind) = op.value {
+                if let Some(IntVal(ind)) = op.value {
                     if let Ok(ind) = ind.try_into() {
                         if ind != ip {
                             ip = ind;
@@ -368,7 +434,7 @@ fn simulate_program(program: &[Op]) {
             OpKind::GT => {
                 if let Some(a) = stack.pop() {
                     if let Some(b) = stack.pop() {
-                        stack.push((b > a).into());
+                        stack.push(IntVal((b > a).into()));
                     }
                 }
                 ip += 1;
@@ -376,7 +442,7 @@ fn simulate_program(program: &[Op]) {
             OpKind::LT => {
                 if let Some(a) = stack.pop() {
                     if let Some(b) = stack.pop() {
-                        stack.push((b < a).into());
+                        stack.push(IntVal((b < a).into()));
                     }
                 }
                 ip += 1;
@@ -432,14 +498,31 @@ fn compile_program_darwin_arm64(program: &[Op], filename: &str) {
         let _ = file.write(b"_start: \n");
 
         let mut ip = 0;
+        let strings: Vec<&Op> = program
+            .iter()
+            .filter(|op| op.kind == OpKind::Push)
+            .collect();
         while ip < program.len() {
             let op = &program[ip];
+            use OpValue::{IntVal, StringVal};
             match op.kind {
                 OpKind::Push => {
-                    if let Some(val) = op.value {
+                    if let Some(IntVal(val)) = &op.value {
                         let _ = file.write(b"    // push \n");
                         let _ = file.write(format!("    ldr x0, ={val}\n").as_bytes());
-                        let _ = file.write("    str x0, [sp, #-16]!\n".to_string().as_bytes());
+                        let _ = file.write(b"    str x0, [sp, #-16]!\n");
+                    } else if let Some(StringVal(val)) = &op.value {
+                        let val_idx = strings
+                            .iter()
+                            .position(|op| op.value == Some(OpValue::StringVal(val.clone())));
+                        if let Some(val) = val_idx {
+                            let _ = file.write(b"    // push \n");
+                            let _ =
+                                file.write(format!("    adrp x0, string{val}@PAGE\n").as_bytes());
+                            let _ = file
+                                .write(format!("    add x0, x0, string{val}@PAGEOFF\n").as_bytes());
+                            let _ = file.write(b"    str x0, [sp, #-16]!\n");
+                        }
                     }
                     ip += 1;
                 }
@@ -519,6 +602,15 @@ fn compile_program_darwin_arm64(program: &[Op], filename: &str) {
                     let _ = file.write(b"    bl print\n");
                     ip += 1;
                 }
+                OpKind::Write => {
+                    let _ = file.write(b"    // write \n");
+                    let _ = file.write(b"    ldr	X2, [sp], #16\n");
+                    let _ = file.write(b"    ldr	X0, [sp], #16\n");
+                    let _ = file.write(b"    ldr	X1, [sp], #16\n");
+                    let _ = file.write(b"    mov	X16, #4\n");
+                    let _ = file.write(b"    svc	#0x80\n");
+                    ip += 1;
+                }
                 OpKind::Over => {
                     let _ = file.write(b"    // over \n");
                     let _ = file.write(b"    ldr x0, [sp], #16\n");
@@ -532,7 +624,7 @@ fn compile_program_darwin_arm64(program: &[Op], filename: &str) {
                     let _ = file.write(b"    // if \n");
                     let _ = file.write(b"    ldr x0, [sp], #16\n");
                     let _ = file.write(b"    cmp x0, #0\n");
-                    if let Some(ind) = op.value {
+                    if let Some(IntVal(ind)) = op.value {
                         let _ = file.write(format!("    beq addr_{ind}\n").as_bytes());
                     }
                     ip += 1;
@@ -545,13 +637,13 @@ fn compile_program_darwin_arm64(program: &[Op], filename: &str) {
                     let _ = file.write(b"    // do \n");
                     let _ = file.write(b"    ldr x0, [sp], #16\n");
                     let _ = file.write(b"    cmp x0, #0\n");
-                    if let Some(ind) = op.value {
+                    if let Some(IntVal(ind)) = op.value {
                         let _ = file.write(format!("    beq addr_{ind}\n").as_bytes());
                     }
                     ip += 1;
                 }
                 OpKind::End => {
-                    if let Some(ind) = op.value {
+                    if let Some(IntVal(ind)) = op.value {
                         if let Ok(ind) = TryInto::<usize>::try_into(ind) {
                             if ind != ip {
                                 let _ = file.write(format!("    b addr_{ind}\n").as_bytes());
@@ -589,6 +681,11 @@ fn compile_program_darwin_arm64(program: &[Op], filename: &str) {
         let _ = file.write(b".data\n");
         let _ = file.write(b"    num: .zero 20\n");
         let _ = file.write(b"    newline: .asciz \"\\n\" \n");
+        for (idx, string) in strings.iter().enumerate() {
+            if let Some(OpValue::StringVal(val)) = &string.value {
+                let _ = file.write(format!("    string{idx}: .asciz \"{val}\" \n").as_bytes());
+            }
+        }
     }
 }
 
